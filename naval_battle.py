@@ -189,7 +189,7 @@ class Player(object):
             "Vous ne pouvez supprimer aucun attribut de cette classe")
 
 
-def plateau(objects, config):
+def plateau(config):
     """ Cré un plateau de jeu pouvant aller jusqu'à 26*26 cases
     - Ordonnées : A - Z
     - Abscisses : 0 - 26
@@ -217,13 +217,6 @@ def plateau(objects, config):
     # Affichage des coordonnées
     for i in range(0, config["lines"] * config["columns"], config["columns"]):
         print(table[i:i + config["columns"]])
-
-    # Affichage des objets
-    for i in range(config["lines"] * config["columns"]):
-        objects.append('case' + str(i))
-        objects[i] = Case()
-        objects[i].coordonnees = table[i]
-        # print(objects[i])
 
     return table
 
@@ -739,7 +732,72 @@ def ships_rules(config):
     return nb_ships_allowed
 
 
-def main():
+def gen_joueur(objectsj1, config, nb_tot_ships, table):
+
+    """Génère le plateau et les attributs d'un joueur
+    """
+
+    # Affichage des objets
+    for i in range(config["lines"] * config["columns"]):
+        objectsj1.append('case' + str(i))
+        objectsj1[i] = Case()
+        objectsj1[i].coordonnees = table[i]
+        # print(objects[i])
+
+    joueur1 = Player()
+    while True:
+        try:
+            j1_nom = input(
+                "Enter le nom du joueur 1 (20 caractères maximum):\n> ")
+            if len(j1_nom) > 20:
+                raise ValueError("Entrer un nom plus court.")
+            break
+        except ValueError as VE:
+            print(VE)
+    joueur1.name = j1_nom
+    joueur1.ships_left = nb_tot_ships
+    # print(joueur1)
+
+    print("\nChoix du mode de génération de l'emplacement des bateaux pour {joueur1}:".format(
+        joueur1=joueur1.name))
+    while True:
+        try:
+            gen_j1 = int(
+                input("1. Génération par le joueur,\n2. Génération aléatoire,\n> "))
+            if not gen_j1 in [1, 2]:
+                raise ValueError("Entrer 1 ou 2.")
+            break
+        except ValueError as VE:
+            print(VE)
+
+    if gen_j1 == 1:
+        # Génération du plateau du joueur 1 par le joueur 1
+        placement_joueur(objectsj1, nb_tot_ships, config, table)
+    elif gen_j1 == 2:
+        # Génération du plateau du joueur 1 aléatoirement
+        while True:
+            try:
+                cote = int(
+                    input("1. Autoriser les bateaux côtes à côtes,\n2. Ne pas autoriser les bateaux côtes à côtes,\n> "))
+                if not cote in [1, 2]:
+                    raise ValueError("Entrer 1 ou 2.")
+                break
+            except ValueError as VE:
+                print(VE)
+        if cote == 1:
+            placement_joueur(objectsj1, nb_tot_ships,
+                             config, table, aléatoire=True)
+        elif cote == 2:
+            placement_joueur(objectsj1, nb_tot_ships, config,
+                             table, aléatoire=True, near=False)
+
+    affichage_our_ships(objectsj1, config)
+    joueur1.plateau = [i.__dict__ for i in objectsj1]
+    print(joueur1)
+
+    return joueur1, objectsj1
+
+def main(objectsj1, objectsj2):
     """ Routine globale """
 
     print("Bataille Navale\n")
@@ -826,118 +884,27 @@ def main():
         except ValueError as VE:
             print(VE)
 
+    table = plateau(config)
+        
     # Classe représentant le premier joueur
-    joueur1 = Player()
-    while True:
-        try:
-            j1_nom = input(
-                "Enter le nom du joueur 1 (20 caractères maximum):\n> ")
-            if len(j1_nom) > 20:
-                raise ValueError("Entrer un nom plus court.")
-            break
-        except ValueError as VE:
-            print(VE)
-    joueur1.name = j1_nom
-    joueur1.ships_left = nb_tot_ships
-    # print(joueur1)
-
-    print("\nChoix du mode de génération de l'emplacement des bateaux pour {joueur1}:".format(
-        joueur1=joueur1.name))
-    while True:
-        try:
-            gen_j1 = int(
-                input("1. Génération par le joueur,\n2. Génération aléatoire,\n> "))
-            if not gen_j1 in [1, 2]:
-                raise ValueError("Entrer 1 ou 2.")
-            break
-        except ValueError as VE:
-            print(VE)
-
-    table = plateau(objectsj1, config)
-
-    if gen_j1 == 1:
-        # Génération du plateau du joueur 1 par le joueur 1
-        placement_joueur(objectsj1, nb_tot_ships, config, table)
-    elif gen_j1 == 2:
-        # Génération du plateau du joueur 1 aléatoirement
-        while True:
-            try:
-                cote = int(
-                    input("1. Autoriser les bateaux côtes à côtes,\n2. Ne pas autoriser les bateaux côtes à côtes,\n> "))
-                if not cote in [1, 2]:
-                    raise ValueError("Entrer 1 ou 2.")
-                break
-            except ValueError as VE:
-                print(VE)
-        if cote == 1:
-            placement_joueur(objectsj1, nb_tot_ships,
-                             config, table, aléatoire=True)
-        elif cote == 2:
-            placement_joueur(objectsj1, nb_tot_ships, config,
-                             table, aléatoire=True, near=False)
-
-    affichage_our_ships(objectsj1, config)
-    joueur1.plateau = [i.__dict__ for i in objectsj1]
-    print(joueur1)
+    joueur1, objectsj1 = gen_joueur(objectsj1, config, nb_tot_ships, table)
 
     if mode == 1:
-        # Classe représentant le second joueur
-        joueur2 = Player()
-        while True:
-            try:
-                j2_nom = input(
-                    "Enter le nom du joueur 2 (20 caractères maximum):\n> ")
-                if len(j2_nom) > 20:
-                    raise ValueError("Entrer un nom plus court.")
-                break
-            except ValueError as VE:
-                print(VE)
-        joueur2.name = j2_nom
-        joueur2.ships_left = nb_tot_ships
-        # print(joueur2)
 
-        print(
-            "\nChoix du mode de génération de l'emplacement des bateaux pour le {joueur2}:".format(joueur2=joueur2.name))
-        while True:
-            try:
-                gen_j2 = int(
-                    input("1. Génération par le joueur,\n2. Génération aléatoire,\n> "))
-                if not gen_j2 in [1, 2]:
-                    raise ValueError("Entrer 1 ou 2.")
-                break
-            except ValueError as VE:
-                print(VE)
+        joueur2, objectsj2 = gen_joueur(objectsj2, config, nb_tot_ships, table)
 
-        table = plateau(objectsj2, config)
-
-        if gen_j2 == 1:
-            # Génération du plateau du joueur 2 par le joueur 2
-            placement_joueur(objectsj2, nb_tot_ships, config, table)
-        elif gen_j2 == 2:
-            # Génération du plateau du joueur 2 aléatoirement
-            while True:
-                try:
-                    cote = int(
-                        input("1. Autoriser les bateaux côtes à côtes,\n2. Ne pas autoriser les bateaux côtes à côtes,\n> "))
-                    if not cote in [1, 2]:
-                        raise ValueError("Entrer 1 ou 2.")
-                    break
-                except ValueError as VE:
-                    print(VE)
-            if cote == 1:
-                placement_joueur(objectsj2, nb_tot_ships,
-                                 config, table, aléatoire=True)
-            elif cote == 2:
-                placement_joueur(objectsj2, nb_tot_ships, config,
-                                 table, aléatoire=True, near=False)
-
-        affichage_our_ships(objectsj2, config)
-        joueur2.plateau = [i.__dict__ for i in objectsj2]
-        print(joueur2)
         joueur1, joueur2 = choose_starter(joueur1, joueur2)
         play(joueur1, joueur2, table)
 
     elif mode == 2:
+
+        # Affichage des objets
+        for i in range(config["lines"] * config["columns"]):
+            objectsj2.append('case' + str(i))
+            objectsj2[i] = Case()
+            objectsj2[i].coordonnees = table[i]
+            # print(objects[i])
+
         # Classe représentant l'IA
         joueur2 = Player()
         while True:
@@ -952,8 +919,6 @@ def main():
         joueur2.name = joueur2_nom
         joueur2.ships_left = nb_tot_ships
 
-        # Génération aléatoire
-        table = plateau(objectsj2, config)
         placement_joueur(objectsj2, nb_tot_ships,
                          config, table, aléatoire=True)
         affichage_our_ships(objectsj2, config)
@@ -964,7 +929,7 @@ def main():
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(main(objectsj1, objectsj2))
 
 
 # Variante "salvo": autant de tirs que de bateaux fonctionnels
