@@ -1,0 +1,37 @@
+COMMAND Line : input
+
+
+Bataille Navale
+
+
+Choix de la configuration :
+ 1. Créer un nouveau fichier,
+    Entrer le nombre de colones (10-26): 
+    Entrer le nombre de lignes (10-26): 
+    Entrer à la suite les nombres de bateaux de tailles 2,3,4 et 5 séparés par une virgule : 
+ 2. Utiliser un fichier existant,
+    Entrer le nombre correspondant à la ligne de la configuration que vous voulez entrer :
+
+    
+Choix du mode jeux (PVP, PVE):
+ 1. Joueur contre joueur,
+ 2. Joueur contre IA,
+
+ 
+Enter le nom du joueur 1 (20 caractères maximum):
+Choix du mode de génération de l'emplacement des bateaux pour {joueur1}
+ 1. Génération par le joueur,
+    Entrer la taille de votre bateau (1-{taillemax}):
+    Entrer la première case de votre bateau : 
+    Entrer la direction vers laquelle se dirige votre navire (N/S/E/O) : 
+ 2. Génération aléatoire,
+    1. Autoriser les bateaux côtes à côtes,
+    2. Ne pas autoriser les bateaux côtes à côtes,
+    
+// Même chose pour le joueur 2
+
+Enter le nom de l'IA (20 caractères maximum): 
+
+Choisissez qui commence la partie (1, 2, A): 
+ 
+Entrer la case cible de votre tir : 

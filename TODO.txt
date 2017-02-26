@@ -8,4 +8,5 @@
 
 # Choix configuration plateau - position des navires prédéfinie pour être moins touché
 # -- Espacer les navires d'une case OU les grouper dans un coin
-# 
+
+# Plusieurs difficultés de l'IA (différentes stratégies, génération sans bateaux côtes à côtes / bateaux sur les extrémités du plateau)

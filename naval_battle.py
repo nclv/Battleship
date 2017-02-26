@@ -24,7 +24,7 @@ def read_config():
         with open("config.txt", 'r') as f:
             print("\nFichier contenant la configuration :", f.name)
             data = f.read()
-    except Exception:
+    except IOError:
         f = open("config.txt", "w")
         f.close()
 
@@ -235,28 +235,28 @@ def test_directions(objects, config, taille, direction, i):
         try:
             return - config["columns"], objects[(i - config["columns"] * (taille - 1)) % (
                 config["columns"] * config["lines"])].coordonnees > objects[i].coordonnees
-        except:
+        except AttributeError:
             return - config["columns"], objects[(i - config["columns"] * (taille - 1)) % (
                 config["columns"] * config["lines"])]["coordonnees"] > objects[i]["coordonnees"]
     elif direction == 'S':
         try:
             return config["columns"], objects[(i + config["columns"] * (taille - 1)) % (
                 config["columns"] * config["lines"])].coordonnees < objects[i].coordonnees
-        except:
+        except AttributeError:
             return config["columns"], objects[(i + config["columns"] * (taille - 1)) % (
                 config["columns"] * config["lines"])]["coordonnees"] < objects[i]["coordonnees"]
     elif direction == 'E':
         try:
             return 1, objects[(i + taille - 1) % (config["columns"] *
                                                   config["lines"])].coordonnees[0] != objects[i].coordonnees[0]
-        except:
+        except AttributeError:
             return 1, objects[(i + taille - 1) % (config["columns"] * config["lines"])][
                 "coordonnees"][0] != objects[i]["coordonnees"][0]
     elif direction == 'O':
         try:
             return - 1, objects[(i - (taille - 1)) % (config["columns"] *
                                                       config["lines"])].coordonnees[0] != objects[i].coordonnees[0]
-        except:
+        except AttributeError:
             return - 1, objects[(i - (taille - 1)) % (config["columns"] * config["lines"])][
                 "coordonnees"][0] != objects[i]["coordonnees"][0]
 
@@ -388,7 +388,7 @@ def near_cases_sub(objects, config, place):
     for i in [- config["columns"], config["columns"], - 1, 1]:
         try:
             cases_autour.append(objects[place + i].our_ship)
-        except:
+        except IndexError:
             cases_autour.append(0)
 
     # print(cases_autour)
@@ -749,7 +749,7 @@ def gen_joueur(objectsj1, config, nb_tot_ships, table):
     while True:
         try:
             j1_nom = input(
-                "Enter le nom du joueur 1 (20 caractères maximum):\n> ")
+                "Enter le nom du joueur (20 caractères maximum):\n> ")
             if len(j1_nom) > 20:
                 raise ValueError("Entrer un nom plus court.")
             break
