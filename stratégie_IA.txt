@@ -1,25 +1,25 @@
-Stratégie chasse/cible (hasard).
-- Tire au hasard jusqu’à ce qu’il trouve une cible. 
-- Lorsqu’il a touché, il s’acharne sur les cases adjacentes. 
-- Une fois le navire coulé, la chasse reprend jusqu’à l’acquisition d’une nouvelle cible. 
+ï»¿StratÃ©gie chasse/cible (hasard).
+- Tire au hasard jusquâ€™Ã  ce quâ€™il trouve une cible. 
+- Lorsquâ€™il a touchÃ©, il sâ€™acharne sur les cases adjacentes. 
+- Une fois le navire coulÃ©, la chasse reprend jusquâ€™Ã  lâ€™acquisition dâ€™une nouvelle cible. 
 :: moyenne de 66 coups pour couler la flotte ennemie.
 
-Amélioration: parité mathématique. 
-- Imaginez que la grille est colorée comme un échiquier, avec des carrés blancs et bleus. 
+AmÃ©lioration: paritÃ© mathÃ©matique. 
+- Imaginez que la grille est colorÃ©e comme un Ã©chiquier, avec des carrÃ©s blancs et bleus. 
 - Le plus petit des navires (le destroyer), couvre deux cases et se trouve donc, obligatoirement, sur deux cases, une bleue et une blanche. 
-- Si l’on ne tire que sur les cases bleues, on frappe donc n’importe quel navire au moins une fois. 
-- Cette méthode permet alors de diviser par deux le nombre de cibles sur le plateau lorsque l’on est en mode Chasse. 
-(Dès que l’on touche, on passe alors en mode Cible en attaquant les cases bleues et blanches jusqu’à ce que le navire soit complètement coulé.) 
+- Si lâ€™on ne tire que sur les cases bleues, on frappe donc nâ€™importe quel navire au moins une fois. 
+- Cette mÃ©thode permet alors de diviser par deux le nombre de cibles sur le plateau lorsque lâ€™on est en mode Chasse. 
+(DÃ¨s que lâ€™on touche, on passe alors en mode Cible en attaquant les cases bleues et blanches jusquâ€™Ã  ce que le navire soit complÃ¨tement coulÃ©.) 
 :: moyenne de 65 coups pour couler la flotte ennemie.
 
-Calculer la densité de probabilité des navires.
-- Fonction de densité de probabilité, qui prend en considération les différentes manières dont les cinq navires peuvent être déployés sur le plateau. 
-- L’algorithme de Berry considère toutes les configurations possibles des cinq navires et calcule la probabilité, pour chaque case, d’être ou non occupée par un navire. 
-- Au départ du jeu, les navires peuvent naturellement se trouver n’importe où, les probabilités sont donc équivalentes pour chaque case.
-- Mais au fur et à mesure, on élimine de plus en plus de cases et l’on réduit d’autant le nombre de configurations, le porte-avions, long de cinq cases, ne peut se trouver sur un espace de quatre cases. 
-- En considérant la longueur de chaque navire encore en lice et en tirant dans les zones où il peut se trouver, le taux de réussite est grandement amélioré. 
+Calculer la densitÃ© de probabilitÃ© des navires.
+- Fonction de densitÃ© de probabilitÃ©, qui prend en considÃ©ration les diffÃ©rentes maniÃ¨res dont les cinq navires peuvent Ãªtre dÃ©ployÃ©s sur le plateau. 
+- Lâ€™algorithme de Berry considÃ¨re toutes les configurations possibles des cinq navires et calcule la probabilitÃ©, pour chaque case, dâ€™Ãªtre ou non occupÃ©e par un navire. 
+- Au dÃ©part du jeu, les navires peuvent naturellement se trouver nâ€™importe oÃ¹, les probabilitÃ©s sont donc Ã©quivalentes pour chaque case.
+- Mais au fur et Ã  mesure, on Ã©limine de plus en plus de cases et lâ€™on rÃ©duit dâ€™autant le nombre de configurations, le porte-avions, long de cinq cases, ne peut se trouver sur un espace de quatre cases. 
+- En considÃ©rant la longueur de chaque navire encore en lice et en tirant dans les zones oÃ¹ il peut se trouver, le taux de rÃ©ussite est grandement amÃ©liorÃ©. 
 :: moyenne de 44 coups pour couler la flotte ennemie.
 
 
 -- Tirer au centre de la grille
--- Attaque quadrillée: 5 en 5 puis 4 en 4...
+-- Attaque quadrillÃ©e: 5 en 5 puis 4 en 4...

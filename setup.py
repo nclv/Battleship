@@ -7,7 +7,7 @@ with open('README.rst') as f:
     readme = f.read()
 
 with open('LICENSE') as f:
-    license = f.read()
+    Licence = f.read()
 
 setup(
     name='Bataille navale',
@@ -17,6 +17,6 @@ setup(
     author='Vincent Nicolas',
     author_email='nicolas.vincent100@gmail.com',
     url='https://github.com/NicovincX2',
-    license=license,
+    license=License,
     packages=find_packages(exclude=('tests', 'docs'))
 )

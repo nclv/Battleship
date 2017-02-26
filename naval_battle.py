@@ -5,9 +5,10 @@
 # Auteur : Nicolas Vincent T°S5
 
 import sys
+import ast
 import math
 from itertools import product
-import random
+import secrets
 import string
 
 objectsj1 = []  # Tableau contenant les objets du plateau du joueur 1
@@ -23,15 +24,15 @@ def read_config():
         with open("config.txt", 'r') as f:
             print("\nFichier contenant la configuration :", f.name)
             data = f.read()
-    except:
+    except Exception:
         f = open("config.txt", "w")
         f.close()
 
     config_list = []
     print("Configurations présentes dans le fichier.")
     for line in data.splitlines():
-        print(eval(line))  # str to list
-        config_list.append(eval(line))
+        print(ast.literal_eval(line))  # str to list
+        config_list.append(ast.literal_eval(line))
 
     # print(config_list) # Liste de tuples
     return config_list
@@ -211,8 +212,8 @@ def plateau(config):
     table = list(product(ordonnes, abscisses))
 
     # On transforme les couples en string
-    for i in range(len(table)):
-        table[i] = "".join(table[i])
+    for index, value in enumerate(table):
+        table[index] = "".join(value)
 
     # Affichage des coordonnées
     for i in range(0, config["lines"] * config["columns"], config["columns"]):
@@ -319,7 +320,7 @@ def placement_joueur(objects, nb_tot_ships, config,
         while taille_list.count(i) != configships[i]:
             taille_list.append(i)
 
-    for k in range(nb_tot_ships):  # nb_total_bateaux
+    for _ in range(nb_tot_ships):  # nb_total_bateaux
         restart = True
         while restart:  # Boucle infini pour répéter lsq'il y a une mauvaise entrée ou un bateau déjà présent
             restart = False
@@ -330,12 +331,12 @@ def placement_joueur(objects, nb_tot_ships, config,
             else:
                 taille, place, direction, configships = user_input_rules(
                     configships, table)
-            for i in range(len(objects)):  # Parcours de la liste d'objets
-                coordonnees = objects[i].coordonnees
+            for i, value in enumerate(objects):  # Parcours de la liste d'objets
+                coordonnees = value.coordonnees
                 if coordonnees == place:  # Si on arrive aux coordonnées entrées
                     # Liste des cases autour du bateau (test présence bateau)
                     cases_autour_boat = near_cases(
-                        objects, config, taille, direction, i, coordonnees)
+                        objects, config, taille, direction, i)
                     if near == False and (len(cases_autour_boat) != cases_autour_boat.count(
                             0) + cases_autour_boat.count(taille) or cases_autour_boat.count(taille) > taille):
                         placed = False
@@ -356,7 +357,7 @@ def placement_joueur(objects, nb_tot_ships, config,
                                 "Il vous reste {} bateaux à placer.".format(restant))
 
 
-def near_cases(objects, config, taille, direction, i, coordonnees):
+def near_cases(objects, config, taille, direction, i):
     """ Retourne une liste de la présence de bateaux sur les cases adjacentes d'un bateau en prennant en compte le bateau lui-même
     :: objects : objet représentant une case
     :: config : fichier de configuration
@@ -492,7 +493,7 @@ def strategie_IA(joueur1, joueur2, table_allowed, config,
             joueur1.ships_lose += 1
             horizontal, vertical = False, False
             # All index of the first value
-            for i in [i for i, val in enumerate(boat) if val == boat[0]]:
+            for _ in [i for i, val in enumerate(boat) if val == boat[0]]:
                 # Emplacement dans possibilites des valeurs puis remplacement
                 # valeurs dans joueur2.plateau
                 joueur2.plateau[possibilites[0]]['adv_ship'] = boat[0]
@@ -514,14 +515,14 @@ def strategie_IA(joueur1, joueur2, table_allowed, config,
         print(horizontal, vertical)
 
         if not possibilites:  # Test liste vide
-            position = random.choice(table_allowed)
+            position = secrets.choice(table_allowed)
             print(position)
         elif len(possibilites) == 1:  # Test 1 seul élément
-            direction = random.choice(directions)
+            direction = secrets.choice(directions)
         elif horizontal:  # Test 2 éléments côtes à côtes
-            direction = random.choice(direct[2:])
+            direction = secrets.choice(direct[2:])
         elif vertical:  # Test 2 éléments l'un en dessous de l'autre
-            direction = random.choice(direct[:2])
+            direction = secrets.choice(direct[:2])
 
         if possibilites:
             if (joueur2.plateau[(possibilites[0] - 1) % (config["columns"] * config["lines"])]['coordonnees'] not in table_allowed and horizontal) or (
@@ -532,7 +533,7 @@ def strategie_IA(joueur1, joueur2, table_allowed, config,
                 case_bateau = possibilites[0]
                 print("b d")
             else:
-                case_bateau = random.choice(
+                case_bateau = secrets.choice(
                     [possibilites[0], possibilites[-1]])
             print(case_bateau)
             if case_bateau == possibilites[0] and horizontal:
@@ -582,7 +583,7 @@ def choose_starter(joueur1, joueur2):
             if not start in ['1', '2', 'A']:
                 raise ValueError("Entrer 1, 2 ou A.")
             if start == 'A':
-                start = random.choice(['1', '2'])
+                start = secrets.choice(['1', '2'])
             break
         except ValueError as VE:
             print(VE)
@@ -684,16 +685,16 @@ def alea_input_rules(configships, table, taille_list):
 
     while True:
         try:
-            taille = random.choice(taille_list)
+            taille = secrets.choice(taille_list)
             if configships[taille] == 0:
                 taille_list.remove(taille)
                 raise ValueError
             break
-        except ValueError as VE:
+        except ValueError:
             pass
 
-    place = random.choice(table)
-    direction = random.choice(['N', 'S', 'E', 'O'])
+    place = secrets.choice(table)
+    direction = secrets.choice(['N', 'S', 'E', 'O'])
 
     #print(taille, place, direction)
 
@@ -885,7 +886,7 @@ def main(objectsj1, objectsj2):
             print(VE)
 
     table = plateau(config)
-        
+
     # Classe représentant le premier joueur
     joueur1, objectsj1 = gen_joueur(objectsj1, config, nb_tot_ships, table)
 
@@ -930,15 +931,3 @@ def main(objectsj1, objectsj2):
 
 if __name__ == '__main__':
     sys.exit(main(objectsj1, objectsj2))
-
-
-# Variante "salvo": autant de tirs que de bateaux fonctionnels
-# Variante : sans donner la position des cases touchées
-# Timer sur la partie
-# Touché / Touché coulé / OPTION : Touché avec annonce du navire
-# Passage en jeu aléatoire pendant la partie
-
-# Placement aléatoire sans toucher les bords (1 max ou au choix)
-
-# Choix configuration plateau - position des navires prédéfinie pour être moins touché
-# -- Espacer les navires d'une case OU les grouper dans un coin
