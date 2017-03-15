@@ -240,18 +240,6 @@ class Configuration(object):
             except ValueError as VE:
                 print(VE)
 
-    def confirm_input(self):
-        """Demande de confirmer l'entrée.
-        """
-
-        verif = input("Valider la sélection (O/N): ")
-        if not verif in ["O", "N"]:
-            raise ValueError("Entrer 0 ou N.")
-        if verif == "N":
-            return False
-        else:
-            return True
-
     def read_config(self):
         """Lit le fichier de configuration config.txt situé dans le même dossier ou le cré.
 
@@ -321,6 +309,19 @@ class Configuration(object):
         # print(nb_ships_allowed)
 
         return nb_ships_allowed
+
+    @classmethod
+    def confirm_input(cls):
+        """Demande de confirmer l'entrée.
+        """
+
+        verif = input("Valider la sélection (O/N): ")
+        if not verif in ["O", "N"]:
+            raise ValueError("Entrer 0 ou N.")
+        if verif == "N":
+            return False
+        else:
+            return True
 
     def __str__(self):
         """Affichage de tous les attributs de la classe.
@@ -480,7 +481,7 @@ class Plateau(object):
                     if coordonnees == place:  # Si on arrive aux coordonnées entrées
                         deplacement = self.test_directions(config, taille, direction, i)
                         # Liste des cases autour du bateau (test présence bateau)
-                        cases_autour_boat, test_cases_autour_boat = self.near_cases_boat(config, taille, deplacement, i)
+                        test_cases_autour_boat = self.near_cases_boat(config, taille, deplacement, i)
                         if near == False and test_cases_autour_boat:
                             placed = False
                             restart = True
@@ -600,7 +601,7 @@ class Plateau(object):
 
         test_cases_autour_boat = len(cases_autour_boat) != cases_autour_boat.count(0) + cases_autour_boat.count(taille) or cases_autour_boat.count(taille) > taille
         # print(cases_autour_boat)
-        return cases_autour_boat, test_cases_autour_boat
+        return test_cases_autour_boat
 
     def near_cases(self, config, place):
         """ Regarde s'il y a des bateaux sur les cases adjacentes d'une case
@@ -1394,7 +1395,7 @@ class Battleship(object):
         # Si mêmes chiffres avec adv_tir --> bateau coulé
         # Quand on connaît la taille du bateau attaqué, adv_ships = taille
             n += 1
-        print("La partie est terminée.\n{gagnant} a gagné !!!".format(altern_joueur[n % 2].name))
+        print("La partie est terminée.\n{gagnant} a gagné !!!".format(gagnant=altern_joueur[n % 2].name))
 
     def __str__(self):
         """Affichage de tous les attributs de la classe.
