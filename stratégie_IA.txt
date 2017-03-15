@@ -1,25 +1,32 @@
 ﻿Stratégie chasse/cible (hasard).
-- Tire au hasard jusqu’à ce qu’il trouve une cible. 
-- Lorsqu’il a touché, il s’acharne sur les cases adjacentes. 
-- Une fois le navire coulé, la chasse reprend jusqu’à l’acquisition d’une nouvelle cible. 
+- Tire au hasard jusqu’à ce qu’il trouve une cible.
+- Lorsqu’il a touché, il s’acharne sur les cases adjacentes.
+- Une fois le navire coulé, la chasse reprend jusqu’à l’acquisition d’une nouvelle cible.
 :: moyenne de 66 coups pour couler la flotte ennemie.
 
-Amélioration: parité mathématique. 
-- Imaginez que la grille est colorée comme un échiquier, avec des carrés blancs et bleus. 
-- Le plus petit des navires (le destroyer), couvre deux cases et se trouve donc, obligatoirement, sur deux cases, une bleue et une blanche. 
-- Si l’on ne tire que sur les cases bleues, on frappe donc n’importe quel navire au moins une fois. 
-- Cette méthode permet alors de diviser par deux le nombre de cibles sur le plateau lorsque l’on est en mode Chasse. 
-(Dès que l’on touche, on passe alors en mode Cible en attaquant les cases bleues et blanches jusqu’à ce que le navire soit complètement coulé.) 
+Amélioration: parité mathématique.
+- Imaginez que la grille est colorée comme un échiquier, avec des carrés blancs et bleus.
+- Le plus petit des navires (le destroyer), couvre deux cases et se trouve donc, obligatoirement, sur deux cases, une bleue et une blanche.
+- Si l’on ne tire que sur les cases bleues, on frappe donc n’importe quel navire au moins une fois.
+- Cette méthode permet alors de diviser par deux le nombre de cibles sur le plateau lorsque l’on est en mode Chasse.
+(Dès que l’on touche, on passe alors en mode Cible en attaquant les cases bleues et blanches jusqu’à ce que le navire soit complètement coulé.)
 :: moyenne de 65 coups pour couler la flotte ennemie.
 
 Calculer la densité de probabilité des navires.
-- Fonction de densité de probabilité, qui prend en considération les différentes manières dont les cinq navires peuvent être déployés sur le plateau. 
-- L’algorithme de Berry considère toutes les configurations possibles des cinq navires et calcule la probabilité, pour chaque case, d’être ou non occupée par un navire. 
+- Fonction de densité de probabilité, qui prend en considération les différentes manières dont les cinq navires peuvent être déployés sur le plateau.
+- L’algorithme de Berry considère toutes les configurations possibles des cinq navires et calcule la probabilité, pour chaque case, d’être ou non occupée par un navire.
 - Au départ du jeu, les navires peuvent naturellement se trouver n’importe où, les probabilités sont donc équivalentes pour chaque case.
-- Mais au fur et à mesure, on élimine de plus en plus de cases et l’on réduit d’autant le nombre de configurations, le porte-avions, long de cinq cases, ne peut se trouver sur un espace de quatre cases. 
-- En considérant la longueur de chaque navire encore en lice et en tirant dans les zones où il peut se trouver, le taux de réussite est grandement amélioré. 
+- Mais au fur et à mesure, on élimine de plus en plus de cases et l’on réduit d’autant le nombre de configurations, le porte-avions, long de cinq cases, ne peut se trouver sur un espace de quatre cases.
+- En considérant la longueur de chaque navire encore en lice et en tirant dans les zones où il peut se trouver, le taux de réussite est grandement amélioré.
 :: moyenne de 44 coups pour couler la flotte ennemie.
 
 
 -- Tirer au centre de la grille
 -- Attaque quadrillée: 5 en 5 puis 4 en 4...
+-- Se rappeler de où les joueurs placent leurs bateaux (statistiques)
+
+http://www.datagenetics.com/blog/december32011/index.html
+https://thevirtuosi.blogspot.fr/2011/10/linear-theory-of-battleship.html
+http://cliambrown.com/battleship/methodology.php
+http://efavdb.com/battleship/
+
