@@ -1,19 +1,21 @@
 
-# Variante "salvo": autant de tirs que de bateaux fonctionnels
-# Variante : sans donner la position des cases touchées
+Variante "salvo": autant de tirs que de bateaux fonctionnels
+Variante : sans donner la position des cases touchées
 
-# Timer sur la partie
+Timer sur la partie
 
-# Raté / Touché / Touché coulé / OPTION : Touché avec annonce du navire
+Raté / Touché / Touché coulé / OPTION : Touché avec annonce du navire
 
-# Passage en jeu aléatoire pendant la partie
-# Placement aléatoire sans toucher les bords (1 max ou au choix)
+Passage en jeu aléatoire pendant la partie
+Placement aléatoire sans toucher les bords (1 max ou au choix)
 
-# Choix configuration plateau - position des navires prédéfinie pour être moins touché
-# -- Espacer les navires d'une case OU les grouper dans un coin
+Choix configuration plateau - position des navires prédéfinie pour être moins touché
+-- Espacer les navires d'une case OU les grouper dans un coin
 
-# Plusieurs difficultés de l'IA (différentes stratégies, génération sans bateaux côtes à côtes / bateaux sur les extrémités du plateau)
+Plusieurs difficultés de l'IA :
+- différentes stratégies - découpage du plateau en 2 / 3 / 4.
+- génération sans bateaux côtes à côtes / bateaux sur les extrémités du plateau,
 
-# Liste contenant les différentes string affichées
+Liste contenant les différentes string affichées
 
-# Affichage d'un tableau de probabilités pour le joueur.
+Affichage d'un tableau de probabilités pour le joueur.

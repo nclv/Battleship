@@ -1114,12 +1114,11 @@ class strategie_IA(object):
         while restart:  # Boucle infini pour répéter lsq'il y a une mauvaise entrée ou un bateau déjà présent
             restart = False
 
-            print(self.possibilites)
+            #print(self.possibilites)
             self.possibilites = list({i for i in range(len(joueur2.plateau.list_cases)) if joueur2.plateau.list_cases[i].adv_ship == True})
-            print(self.possibilites)
-
+            #print(self.possibilites)
             boat = [joueur1.plateau.list_cases[i].our_ship for i in range(len(joueur1.plateau.list_cases)) if i in self.possibilites]
-            print(boat)
+            #print(boat)
 
             # Test même valeur dans boat
             if boat and boat.count(boat[0]) == boat[0]:  # (2,2,3,3) : nb 2 = 2
@@ -1145,41 +1144,52 @@ class strategie_IA(object):
                 else:
                     self.horizontal, self.vertical = False, False
 
-            print(self.horizontal, self.vertical)
+            #print(self.horizontal, self.vertical)
 
             if not self.possibilites:  # Test liste vide
+                # Choix aléatoire dans les cases possibles.
                 position = secrets.choice(self.table_allowed)
-                print(position)
+                #print(position)
             elif len(self.possibilites) == 1:  # Test 1 seul élément
                 direction = secrets.choice(self.directions)
             elif self.horizontal:  # Test 2 éléments côtes à côtes
+                # Choix E/O
                 direction = secrets.choice(self.direct[2:])
             elif self.vertical:  # Test 2 éléments l'un en dessous de l'autre
+                # Choix N/S
                 direction = secrets.choice(self.direct[:2])
 
             if self.possibilites:
+                # Si bateau horizontal et que la case d'avant est jouée OU si bateau vertical et que la case au dessus est jouée, la case bateau devient la case à la fin de la liste.
+                # Sinon si bateau horizontal et que la case d'après est jouée OU si bateau vertical et que la case en dessous est jouée, la case bateau devient la case au début de la liste.
                 if (joueur2.plateau.list_cases[(self.possibilites[0] - 1) % (config["columns"] * config["lines"])].coordonnees not in self.table_allowed and self.horizontal) or (
                         joueur2.plateau.list_cases[(self.possibilites[0] - config["columns"]) % (config["columns"] * config["lines"])].coordonnees not in self.table_allowed and self.vertical):
                     case_bateau = self.possibilites[-1]
                 elif (joueur2.plateau.list_cases[(self.possibilites[-1] + 1) % (config["columns"] * config["lines"])].coordonnees not in self.table_allowed and self.horizontal) or (joueur2.plateau.list_cases[(self.possibilites[-1] + config["columns"]) % (config["columns"] * config["lines"])].coordonnees not in self.table_allowed and self.vertical):
                     case_bateau = self.possibilites[0]
                 else:
-                    case_bateau = secrets.choice(
-                        [self.possibilites[0], self.possibilites[-1]])
-                print(case_bateau)
+                    # Choix aléatoire aux extrémités de la liste des cases possibles
+                    case_bateau = secrets.choice([self.possibilites[0], self.possibilites[-1]])
+                #print(case_bateau)
+
                 if case_bateau == self.possibilites[0] and self.horizontal:
+                    # Début de la liste et horizontal --> O
                     direction = self.direct[3]
                 elif case_bateau == self.possibilites[0] and self.vertical:
+                    # Début de la liste et vertical --> N
                     direction = self.direct[0]
                 elif case_bateau == self.possibilites[-1] and self.horizontal:
+                    # Fin de la liste et horizontal --> E
                     direction = self.direct[2]
                 elif case_bateau == self.possibilites[-1] and self.vertical:
+                    # Fin de la liste et vertical --> S
                     direction = self.direct[1]
-                print(direction)
+                #print(direction)
+                
                 # Si on ne sort pas du plateau
                 if not joueur2.plateau.test_directions(config, 2, direction, case_bateau)[1]:
                     position = joueur2.plateau.list_cases[case_bateau + joueur2.plateau.test_directions(config, 2, direction, case_bateau)[0]].coordonnees
-                    print(position)
+                    #print(position)
                     if direction in self.directions:
                         self.directions.remove(direction)
                 else:
