@@ -1060,6 +1060,8 @@ class strategie_IA(object):
         elif self.difficulte == 1:
             position = self.strategie_naive(joueur1, joueur2, config)
         elif self.difficulte == 2:
+            self.table_allowed = self.table_allowed[::2]
+            # Enlever dessus : en argument fct strategie_naive (voir *args)
             position = self.strategie_naive_parite(joueur1, joueur2, config)
 
         return position
@@ -1114,11 +1116,11 @@ class strategie_IA(object):
         while restart:  # Boucle infini pour répéter lsq'il y a une mauvaise entrée ou un bateau déjà présent
             restart = False
 
-            #print(self.possibilites)
+            print(self.possibilites)
             self.possibilites = list({i for i in range(len(joueur2.plateau.list_cases)) if joueur2.plateau.list_cases[i].adv_ship == True})
-            #print(self.possibilites)
+            print(self.possibilites)
             boat = [joueur1.plateau.list_cases[i].our_ship for i in range(len(joueur1.plateau.list_cases)) if i in self.possibilites]
-            #print(boat)
+            print(boat)
 
             # Test même valeur dans boat
             if boat and boat.count(boat[0]) == boat[0]:  # (2,2,3,3) : nb 2 = 2
@@ -1143,13 +1145,12 @@ class strategie_IA(object):
                     self.vertical = True
                 else:
                     self.horizontal, self.vertical = False, False
-
-            #print(self.horizontal, self.vertical)
+            print(self.horizontal, self.vertical)
 
             if not self.possibilites:  # Test liste vide
                 # Choix aléatoire dans les cases possibles.
                 position = secrets.choice(self.table_allowed)
-                #print(position)
+                print(position)
             elif len(self.possibilites) == 1:  # Test 1 seul élément
                 direction = secrets.choice(self.directions)
             elif self.horizontal:  # Test 2 éléments côtes à côtes
@@ -1170,7 +1171,7 @@ class strategie_IA(object):
                 else:
                     # Choix aléatoire aux extrémités de la liste des cases possibles
                     case_bateau = secrets.choice([self.possibilites[0], self.possibilites[-1]])
-                #print(case_bateau)
+                print(case_bateau)
 
                 if case_bateau == self.possibilites[0] and self.horizontal:
                     # Début de la liste et horizontal --> O
@@ -1184,12 +1185,12 @@ class strategie_IA(object):
                 elif case_bateau == self.possibilites[-1] and self.vertical:
                     # Fin de la liste et vertical --> S
                     direction = self.direct[1]
-                #print(direction)
-                
+                print(direction)
+
                 # Si on ne sort pas du plateau
                 if not joueur2.plateau.test_directions(config, 2, direction, case_bateau)[1]:
                     position = joueur2.plateau.list_cases[case_bateau + joueur2.plateau.test_directions(config, 2, direction, case_bateau)[0]].coordonnees
-                    #print(position)
+                    print(position)
                     if direction in self.directions:
                         self.directions.remove(direction)
                 else:
@@ -1236,7 +1237,6 @@ class strategie_IA(object):
         .. seealso:: zip(), test_directions().
         """
 
-        self.table_allowed = self.table_allowed[::2]
         position = self.strategie_naive(joueur1, joueur2, config)
 
         return position
