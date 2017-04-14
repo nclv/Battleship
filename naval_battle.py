@@ -9,6 +9,7 @@
 import sys
 import ast # eval()
 import math
+import numpy as np
 import itertools
 import secrets # Nombres random
 import string
@@ -1019,7 +1020,8 @@ class strategie_IA(object):
         self.choose_difficulte()
         conf.difficulte_IA = self.difficulte
 
-        self.table_allowed = Plateau.table.copy()
+        self.table_allowed = np.array(Plateau.table.copy()) # Array numpy pour qu'une modification sur table_allowed modifie aussi table_allowed_cut
+
         self.possibilites = set()  # Tableau des cases où se trouve un bateau adverse
         self.horizontal = False
         self.vertical = False
@@ -1058,11 +1060,11 @@ class strategie_IA(object):
         if self.difficulte == 0:
             position = self.strategie_alea()
         elif self.difficulte == 1:
-            position = self.strategie_naive(joueur1, joueur2, config)
+            table_allowed_cut = self.table_allowed
+            position = self.strategie_naive(joueur1, joueur2, config, table_allowed_cut)
         elif self.difficulte == 2:
-            self.table_allowed = self.table_allowed[::2]
-            # Enlever dessus : en argument fct strategie_naive (voir *args)
-            position = self.strategie_naive_parite(joueur1, joueur2, config)
+            table_allowed_cut = self.table_allowed[::2] # Une case sur deux
+            position = self.strategie_naive(joueur1, joueur2, config, table_allowed_cut)
 
         return position
 
@@ -1070,19 +1072,21 @@ class strategie_IA(object):
         """Stratégie complètement aléatoire.
 
         Args:
-            self.table_allowed (list): Coordonnées des cases qui ne sont pas encore jouées.
+            self.table_allowed (array): Coordonnées des cases qui ne sont pas encore jouées.
 
         Returns:
-            self.table_allowed (list): Coordonnées des cases qui ne sont pas encore jouées.
+            self.table_allowed (array): Coordonnées des cases qui ne sont pas encore jouées.
             self.position (str): Coordonnée de la case visée.
         """
 
-        position = secrets.choice(self.table_allowed)
-        self.table_allowed.remove(position)
+        position = np.random.choice(self.table_allowed)
+        index = np.argwhere(self.table_allowed == position)
+        self.table_allowed = np.delete(self.table_allowed, index)
+        #self.table_allowed.remove(position)
 
         return position
 
-    def strategie_naive(self, joueur1, joueur2, config):
+    def strategie_naive(self, joueur1, joueur2, config, table_allowed_cut):
         """Stratégie de jeu de l'IA: un bateau à la fois.
 
         Recherche de bateaux sur les cases adjacentes si case bateau touchée.
@@ -1093,7 +1097,8 @@ class strategie_IA(object):
             joueur1 (class instance): Instance de la classe Player() du joueur 1.
             joueur2 (class instance): Instance de la classe Player() du joueur 2.
             conf.config (dict): Fichier de configuration.
-            self.table_allowed (list): Coordonnées des cases qui ne sont pas encore jouées.
+            table_allowed_cut (array): Coordonnées des cases qui ne sont pas encore jouées coupées en fonction de la difficulté.
+            self.table_allowed (array): Coordonnées des cases qui ne sont pas encore jouées.
             self.possibilites (set): Liste des emplacements où il y a un bateau adverse (sans bateau complet).
             self.horizontal (boolean): Si le bateau est orienté Est/Ouest.
             self.vertical (boolean): Si le bateau est orienté Nord/Sud.
@@ -1103,7 +1108,7 @@ class strategie_IA(object):
         Returns:
             joueur1 (class instance): Instance de la classe Player() du joueur 1.
             joueur2 (class instance): Instance de la classe Player() du joueur 2.
-            self.table_allowed (list): Coordonnées des cases qui ne sont pas encore jouées.
+            self.table_allowed (array): Coordonnées des cases qui ne sont pas encore jouées.
             position (str): Coordonnée de la case visée.
             self.horizontal (boolean): Si le bateau est orienté Est/Ouest.
             self.vertical (boolean): Si le bateau est orienté Nord/Sud.
@@ -1149,7 +1154,7 @@ class strategie_IA(object):
 
             if not self.possibilites:  # Test liste vide
                 # Choix aléatoire dans les cases possibles.
-                position = secrets.choice(self.table_allowed)
+                position = np.random.choice(table_allowed_cut)
                 print(position)
             elif len(self.possibilites) == 1:  # Test 1 seul élément
                 direction = secrets.choice(self.directions)
@@ -1200,45 +1205,13 @@ class strategie_IA(object):
 
             if position in self.table_allowed:
                 # (34,35,36) si case_bateau = 34 et que direction = E, la position 35 n'est déjà plus dans table_allowed, on passe à l'autre case_bateau
-                self.table_allowed.remove(position)
+                index = np.argwhere(self.table_allowed == position)
+                self.table_allowed = np.delete(self.table_allowed, index)
+                #self.table_allowed.remove(position)
             else:
                 restart = True
                 continue
         #print(position)
-        return position
-
-    def strategie_naive_parite(self, joueur1, joueur2, config):
-        """Stratégie de jeu de l'IA: un bateau à la fois avec amélioration parité.
-
-        Recherche de bateaux sur les cases adjacentes si case bateau touchée.
-        Quand trouvé, continuer sur la même ligne.
-        Quand il n'y en a plus, s'arrêter : passer de l'autre côté ou retourner aléatoire si bateau coulé.
-
-        Args:
-            joueur1 (class instance): Instance de la classe Player() du joueur 1.
-            joueur2 (class instance): Instance de la classe Player() du joueur 2.
-            conf.config (dict): Fichier de configuration.
-            self.table_allowed (list): Coordonnées des cases qui ne sont pas encore jouées (cases paires)
-            self.possibilites (set): Liste des emplacements où il y a un bateau adverse (sans bateau complet).
-            self.horizontal (boolean): Si le bateau est orienté Est/Ouest.
-            self.vertical (boolean): Si le bateau est orienté Nord/Sud.
-            self.directions (list): Copie de direct à laquelle on enlève les directions déjà choisies.
-            self.direct (list): Toutes directions possibles.
-
-        Returns:
-            joueur1 (class instance): Instance de la classe Player() du joueur 1.
-            joueur2 (class instance): Instance de la classe Player() du joueur 2.
-            self.table_allowed (list): Coordonnées des cases qui ne sont pas encore jouées.
-            position (str): Coordonnée de la case visée.
-            self.horizontal (boolean): Si le bateau est orienté Est/Ouest.
-            self.vertical (boolean): Si le bateau est orienté Nord/Sud.
-            self.directions (list): Copie de direct à laquelle on enlève les directions déjà choisies.
-
-        .. seealso:: zip(), test_directions().
-        """
-
-        position = self.strategie_naive(joueur1, joueur2, config)
-
         return position
 
     def __str__(self):
@@ -1285,6 +1258,13 @@ class Battleship(object):
         """Constructeur de la classe.
         """
 
+        self.normal_game()
+        #self.test_IA()
+
+    def normal_game(self):
+        """Routine globale du jeu.
+        """
+
         self.conf = Configuration()
 
         plateau_joueur1 = Plateau(self.conf.config)
@@ -1301,6 +1281,11 @@ class Battleship(object):
         self.choose_starter()
         self.play(self.conf.config, Plateau.table)
 
+    def test_IA(self):
+        """Routine de test rapide de la stratégie de l'IA (IA vs IA)
+        """
+        # Autocomplete Configuration
+        # Redo play routine
 
     def choose_starter(self):
         """Choix de qui commence.
