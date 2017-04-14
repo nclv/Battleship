@@ -1022,6 +1022,11 @@ class strategie_IA(object):
 
         self.table_allowed = np.array(Plateau.table.copy()) # Array numpy pour qu'une modification sur table_allowed modifie aussi table_allowed_cut
 
+        if self.difficulte == 1:
+            self.table_allowed_cut = self.table_allowed
+        elif self.difficulte == 2:
+            self.table_allowed_cut = self.table_allowed[::2] # Une case sur deux
+
         self.possibilites = set()  # Tableau des cases où se trouve un bateau adverse
         self.horizontal = False
         self.vertical = False
@@ -1060,11 +1065,9 @@ class strategie_IA(object):
         if self.difficulte == 0:
             position = self.strategie_alea()
         elif self.difficulte == 1:
-            table_allowed_cut = self.table_allowed
-            position = self.strategie_naive(joueur1, joueur2, config, table_allowed_cut)
+            position = self.strategie_naive(joueur1, joueur2, config)
         elif self.difficulte == 2:
-            table_allowed_cut = self.table_allowed[::2] # Une case sur deux
-            position = self.strategie_naive(joueur1, joueur2, config, table_allowed_cut)
+            position = self.strategie_naive(joueur1, joueur2, config)
 
         return position
 
@@ -1086,7 +1089,7 @@ class strategie_IA(object):
 
         return position
 
-    def strategie_naive(self, joueur1, joueur2, config, table_allowed_cut):
+    def strategie_naive(self, joueur1, joueur2, config):
         """Stratégie de jeu de l'IA: un bateau à la fois.
 
         Recherche de bateaux sur les cases adjacentes si case bateau touchée.
@@ -1154,7 +1157,7 @@ class strategie_IA(object):
 
             if not self.possibilites:  # Test liste vide
                 # Choix aléatoire dans les cases possibles.
-                position = np.random.choice(table_allowed_cut)
+                position = np.random.choice(self.table_allowed_cut)
                 print(position)
             elif len(self.possibilites) == 1:  # Test 1 seul élément
                 direction = secrets.choice(self.directions)
@@ -1207,11 +1210,14 @@ class strategie_IA(object):
                 # (34,35,36) si case_bateau = 34 et que direction = E, la position 35 n'est déjà plus dans table_allowed, on passe à l'autre case_bateau
                 index = np.argwhere(self.table_allowed == position)
                 self.table_allowed = np.delete(self.table_allowed, index)
+                index = np.argwhere(self.table_allowed_cut == position)
+                self.table_allowed_cut = np.delete(self.table_allowed_cut, index)
                 #self.table_allowed.remove(position)
             else:
                 restart = True
                 continue
         #print(position)
+        print(self.table_allowed_cut)
         return position
 
     def __str__(self):
@@ -1383,12 +1389,6 @@ class Battleship(object):
                     break
                 except ValueError as VE:
                     print(VE)
-
-        # Test bateau coulé
-        # Si aucune case bateau autour --> bateau coulé
-        # While sur une même droite
-        # Si mêmes chiffres avec adv_tir --> bateau coulé
-        # Quand on connaît la taille du bateau attaqué, adv_ships = taille
             n += 1
         print("La partie est terminée.\n{gagnant} a gagné !!!".format(gagnant=altern_joueur[n % 2].name))
 
