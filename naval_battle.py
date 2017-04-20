@@ -11,6 +11,7 @@ import ast # eval()
 import math
 import numpy as np
 import itertools
+import operator
 import secrets # Nombres random
 import string
 
@@ -25,14 +26,19 @@ class Configuration(object):
         difficulte_IA (int): Difficulté de l'IA.
     """
 
-    def __init__(self):
+    def __init__(self, IA = False):
         """Initialisation de la classe.
         """
 
-        self.difficulte_IA = None
-        self.choose_file()
-        self.choose_gamemode()
-        self.choose_config()
+        if IA == False:
+            self.difficulte_IA = None
+            self.choose_file()
+            self.choose_gamemode()
+            self.choose_config()
+        elif IA == True:
+            self.file_name = 'configs'
+            self.mode = 3
+            self.choose_config()
 
     def new_configuration(self):
         """Cré une configuration contenant la taille du plateau, le nombre de bateaux et
@@ -256,21 +262,23 @@ class Configuration(object):
 
         self.file_name += ".txt" # Ajout de l'extension .txt
 
+        config_list_sorted = []
+
         try:
             with open(self.file_name, 'r') as f:
                 print("\nFichier contenant la configuration :", f.name)
                 data = f.read()
+
+            config_list = [ast.literal_eval(line) for line in data.splitlines()] # Liste des configurations
+            config_list_sorted = [sorted(config_list[i]) for i, j in enumerate(config_list)] # Tri de la configuration
+
+            # Affichage des configurations
+            print("Configurations présentes dans le fichier.")
+            for i in config_list_sorted:
+                print(i)
         except IOError:
             f = open(self.file_name, "w")
             f.close()
-
-        config_list = [ast.literal_eval(line) for line in data.splitlines()] # Liste des configurations
-        config_list_sorted = [sorted(config_list[i]) for i, j in enumerate(config_list)] # Tri de la configuration
-
-        # Affichage des configurations
-        print("Configurations présentes dans le fichier.")
-        for i in config_list_sorted:
-            print(i)
 
         #print(config_list) # Liste de tuples
         return config_list_sorted
@@ -581,7 +589,7 @@ class Plateau(object):
         return deplacement
 
     def near_cases_boat(self, config, taille, deplacement, i):
-        """Retourne une liste de la présence de bateaux sur les cases adjacentes d'un bateau en prennant en compte le bateau lui-même.
+        """Retourne s'il y a des bateaux sur les cases adjacentes d'un bateau.
 
         Args:
             config (dict): Fichier de configuration.
@@ -590,7 +598,7 @@ class Plateau(object):
             i (int): Emplacement initial du bateau.
 
         Returns:
-            cases_autour_boat (list): Liste des cases autour du bateau en prennant en compte le bateau.
+            test_cases_autour_boat (boolean): S'il n'y a pas de bateaux autour de la case.
 
         .. seealso:: near_cases(), test_directions().
         """
@@ -604,7 +612,7 @@ class Plateau(object):
         # print(cases_autour_boat)
         return test_cases_autour_boat
 
-    def near_cases(self, config, place):
+    def near_cases(self, config, place, tir = []):
         """ Regarde s'il y a des bateaux sur les cases adjacentes d'une case
 
         Args:
@@ -620,9 +628,12 @@ class Plateau(object):
 
         cases_autour = []
 
-        for i in [- config["columns"], config["columns"], - 1, 1]:
+        for i in [- config["columns"], config["columns"], 1, - 1]:
             try:
-                cases_autour.append(self.list_cases[place + i].our_ship)
+                if tir == 'our':
+                    cases_autour.append(self.list_cases[place + i].our_tir)
+                else:
+                    cases_autour.append(self.list_cases[place + i].our_ship)
             except IndexError:
                 cases_autour.append(0)
 
@@ -638,6 +649,11 @@ class Plateau(object):
 
         print("Bateaux du joueur :")
         j_ships = [int(self.list_cases[i].our_ship) for i in range(0, config["lines"] * config["columns"])]
+
+        for i, j in enumerate(j_ships):
+            if j != 0 and int(self.list_cases[i].adv_tir) == 1:
+                j_ships[i] = 'x'
+
         [print(j_ships[i:i + config["columns"]]) for i in range(0, config["lines"] * config["columns"], config["columns"])]
         print("Tirs de l'adversaire :")
         adv_tir = [int(self.list_cases[i].adv_tir) for i in range(0, config["lines"] * config["columns"])]
@@ -830,6 +846,7 @@ class Player(object):
         self.ships_lose = 0  # 0 bateaux coulé
         self.ships_hit = 0  # 0 case bateau touché
         self.aleatoire = None
+        self.IA = None # IA du joueur s'il n'est pas humain
 
     def name_input(self, nb_tot_ships, j_type):
         """Demande le nom du joueur.
@@ -872,8 +889,8 @@ class Player(object):
             aleatoire (boolean): Variable utile au placement.
         """
 
-        return "Nom : {},\nPlateau : {},\nA commencé la partie : {},\nNombre de tirs effectués : {},\nNombre de bateaux restant : {},\nNombre de bateaux coulés : {},\nNombre de cases bateau touchées : {},\nValeur du placement aléatoire : {}\n".format(
-            self.name, self.plateau, self.start, self.tir, self.ships_left, self.ships_lose, self.ships_hit, self.aleatoire)
+        return "Nom : {},\nA commencé la partie : {},\nNombre de tirs effectués : {},\nNombre de bateaux restant : {},\nNombre de bateaux coulés : {},\nNombre de cases bateau touchées : {},\nValeur du placement aléatoire : {}\n".format(
+            self.name, self.start, self.tir, self.ships_left, self.ships_lose, self.ships_hit, self.aleatoire)
 
     def __getattr__(self, name):
         """Est appelée quand on demande un attribut appelé "name" et qu'il n'existe pas."""
@@ -905,6 +922,8 @@ class PlayerHuman(Player):
         super().__init__(conf, plateau_joueur)
         self.aleatoire = False
         self.gen_Human(conf.config, conf.nb_tot_ships, Plateau.table, plateau_joueur)
+        self.IA = Strategie_IA(conf, human = True) # IA latente qui ne fait qu'un record des possibilités
+        # Utilité pour un passage joueur - IA en cours de partie ?
 
     def gen_Human(self, config, nb_tot_ships, table, plateau_joueur):
         """Génère le plateau et les attributs d'un joueur.
@@ -976,6 +995,7 @@ class PlayerIA(Player):
         super().__init__(conf, plateau_joueur)
         self.aleatoire = True
         self.gen_IA(conf.config, conf.nb_tot_ships, Plateau.table, plateau_joueur)
+        self.IA = Strategie_IA(conf)
 
     def gen_IA(self, config, nb_tot_ships, table, plateau_joueur):
         """Génère le plateau et les attributs d'un joueur.
@@ -998,7 +1018,7 @@ class PlayerIA(Player):
         plateau_joueur.affichage_our_ships(config)
 
 
-class strategie_IA(object):
+class Strategie_IA(object):
     """Stratégie de l'IA en fonction de la difficulté en prennant en compte les coups précédents.
 
     Attributes:
@@ -1011,23 +1031,27 @@ class strategie_IA(object):
         direct (list): Toutes directions possibles.
     """
 
-    def __init__(self, conf):
+    def __init__(self, conf, human = False):
         """Constructeur de la classe.
 
         Initialisation des différents paramètres se retrouvant tour après tour.
         """
 
-        self.choose_difficulte()
+        # Si ce n'est pas un joueur, on attribut une difficulté 
+        if not human:
+            self.choose_difficulte()
+        else:
+            self.difficulte = None
+
         conf.difficulte_IA = self.difficulte
 
         self.table_allowed = np.array(Plateau.table.copy()) # Array numpy pour qu'une modification sur table_allowed modifie aussi table_allowed_cut
+        self.table_allowed_cut = np.array([])
 
-        if self.difficulte == 1:
-            self.table_allowed_cut = self.table_allowed
-        elif self.difficulte == 2:
-            self.table_allowed_cut = self.table_allowed[::2] # Une case sur deux
+        if self.difficulte == 2:
+            self.quadrillage_list(conf.config) # Une case sur deux
 
-        self.possibilites = set()  # Tableau des cases où se trouve un bateau adverse
+        self.out_poss = []
         self.horizontal = False
         self.vertical = False
         self.direct = ['N', 'S', 'E', 'O']
@@ -1055,6 +1079,23 @@ class strategie_IA(object):
 
         self.difficulte = diff
 
+    def quadrillage_list(self, config):
+        """Découpage de la liste des cases pour correspondre à un quadrillage du plateau.
+
+        Args:
+            config (dict): Fichier de configuration.
+        Returns:
+            self.table_allowed_cut (array): Liste des cases quadrillée.
+        """
+
+        table_cut = Plateau.table.copy()
+        # Sépare de 10 en 10
+        table_cut = [table_cut[i:i + config["columns"]] for i in range(0, len(table_cut), config["columns"])]
+        # Alterne pair/impair
+        table_cut = [item[::2] if index % 2 == 0 else item[1::2] for index, item in enumerate(table_cut)]
+        # On rattache les sous-listes
+        self.table_allowed_cut = np.array([x for y in table_cut for x in y])
+
     def exec_strategie(self, joueur1, joueur2, config):
         """Exécute la stratégie correspondant à la difficulté donnée à l'IA.
 
@@ -1064,9 +1105,7 @@ class strategie_IA(object):
 
         if self.difficulte == 0:
             position = self.strategie_alea()
-        elif self.difficulte == 1:
-            position = self.strategie_naive(joueur1, joueur2, config)
-        elif self.difficulte == 2:
+        elif self.difficulte in [1,2]:
             position = self.strategie_naive(joueur1, joueur2, config)
 
         return position
@@ -1099,126 +1138,182 @@ class strategie_IA(object):
         Args:
             joueur1 (class instance): Instance de la classe Player() du joueur 1.
             joueur2 (class instance): Instance de la classe Player() du joueur 2.
-            conf.config (dict): Fichier de configuration.
-            table_allowed_cut (array): Coordonnées des cases qui ne sont pas encore jouées coupées en fonction de la difficulté.
+            config (dict): Fichier de configuration.
+            self.table_allowed_cut (array): Coordonnées des cases qui ne sont pas encore jouées coupées en fonction de la difficulté.
             self.table_allowed (array): Coordonnées des cases qui ne sont pas encore jouées.
-            self.possibilites (set): Liste des emplacements où il y a un bateau adverse (sans bateau complet).
             self.horizontal (boolean): Si le bateau est orienté Est/Ouest.
             self.vertical (boolean): Si le bateau est orienté Nord/Sud.
-            self.directions (list): Copie de direct à laquelle on enlève les directions déjà choisies.
+            self.directions (list): Directions restreintes possibles.
             self.direct (list): Toutes directions possibles.
 
         Returns:
             joueur1 (class instance): Instance de la classe Player() du joueur 1.
             joueur2 (class instance): Instance de la classe Player() du joueur 2.
+            self.table_allowed_cut (array): Coordonnées des cases qui ne sont pas encore jouées coupées en fonction de la difficulté.
             self.table_allowed (array): Coordonnées des cases qui ne sont pas encore jouées.
             position (str): Coordonnée de la case visée.
             self.horizontal (boolean): Si le bateau est orienté Est/Ouest.
             self.vertical (boolean): Si le bateau est orienté Nord/Sud.
-            self.directions (list): Copie de direct à laquelle on enlève les directions déjà choisies.
+            self.directions (list): Directions restreintes possibles.
 
-        .. seealso:: zip(), test_directions().
+        .. seealso:: operator.itemgetter(), choose_direction(), test_directions(), give_direction().
         """
 
-        restart = True
-        while restart:  # Boucle infini pour répéter lsq'il y a une mauvaise entrée ou un bateau déjà présent
-            restart = False
-
-            print(self.possibilites)
-            self.possibilites = list({i for i in range(len(joueur2.plateau.list_cases)) if joueur2.plateau.list_cases[i].adv_ship == True})
-            print(self.possibilites)
-            boat = [joueur1.plateau.list_cases[i].our_ship for i in range(len(joueur1.plateau.list_cases)) if i in self.possibilites]
-            print(boat)
-
-            # Test même valeur dans boat
-            if boat and boat.count(boat[0]) == boat[0]:  # (2,2,3,3) : nb 2 = 2
-                joueur1.ships_left -= 1
-                joueur1.ships_lose += 1
-                self.horizontal, self.vertical = False, False
-                # All index of the first value
-                for _ in [i for i, val in enumerate(boat) if val == boat[0]]:
-                    # Emplacement dans possibilites des valeurs puis remplacement
-                    # valeurs dans joueur2.plateau
-                    joueur2.plateau.list_cases[self.possibilites[0]].adv_ship = boat[0]
-                    self.possibilites.remove(self.possibilites[0])
-                    self.directions = self.direct.copy()
-
-            # Test deux cases bateau adjacentes
-            self.possibilites.sort()
-            for x, y in zip(self.possibilites, self.possibilites[1:]):
-                #print(x, y)
-                if x + 1 == y:
-                    self.horizontal = True
-                elif x + config["columns"] == y:
-                    self.vertical = True
-                else:
-                    self.horizontal, self.vertical = False, False
-            print(self.horizontal, self.vertical)
-
-            if not self.possibilites:  # Test liste vide
-                # Choix aléatoire dans les cases possibles.
-                position = np.random.choice(self.table_allowed_cut)
-                print(position)
-            elif len(self.possibilites) == 1:  # Test 1 seul élément
-                direction = secrets.choice(self.directions)
-            elif self.horizontal:  # Test 2 éléments côtes à côtes
-                # Choix E/O
-                direction = secrets.choice(self.direct[2:])
-            elif self.vertical:  # Test 2 éléments l'un en dessous de l'autre
-                # Choix N/S
-                direction = secrets.choice(self.direct[:2])
-
-            if self.possibilites:
-                # Si bateau horizontal et que la case d'avant est jouée OU si bateau vertical et que la case au dessus est jouée, la case bateau devient la case à la fin de la liste.
-                # Sinon si bateau horizontal et que la case d'après est jouée OU si bateau vertical et que la case en dessous est jouée, la case bateau devient la case au début de la liste.
-                if (joueur2.plateau.list_cases[(self.possibilites[0] - 1) % (config["columns"] * config["lines"])].coordonnees not in self.table_allowed and self.horizontal) or (
-                        joueur2.plateau.list_cases[(self.possibilites[0] - config["columns"]) % (config["columns"] * config["lines"])].coordonnees not in self.table_allowed and self.vertical):
-                    case_bateau = self.possibilites[-1]
-                elif (joueur2.plateau.list_cases[(self.possibilites[-1] + 1) % (config["columns"] * config["lines"])].coordonnees not in self.table_allowed and self.horizontal) or (joueur2.plateau.list_cases[(self.possibilites[-1] + config["columns"]) % (config["columns"] * config["lines"])].coordonnees not in self.table_allowed and self.vertical):
-                    case_bateau = self.possibilites[0]
-                else:
-                    # Choix aléatoire aux extrémités de la liste des cases possibles
-                    case_bateau = secrets.choice([self.possibilites[0], self.possibilites[-1]])
-                print(case_bateau)
-
-                if case_bateau == self.possibilites[0] and self.horizontal:
-                    # Début de la liste et horizontal --> O
-                    direction = self.direct[3]
-                elif case_bateau == self.possibilites[0] and self.vertical:
-                    # Début de la liste et vertical --> N
-                    direction = self.direct[0]
-                elif case_bateau == self.possibilites[-1] and self.horizontal:
-                    # Fin de la liste et horizontal --> E
-                    direction = self.direct[2]
-                elif case_bateau == self.possibilites[-1] and self.vertical:
-                    # Fin de la liste et vertical --> S
-                    direction = self.direct[1]
-                print(direction)
-
-                # Si on ne sort pas du plateau
-                if not joueur2.plateau.test_directions(config, 2, direction, case_bateau)[1]:
-                    position = joueur2.plateau.list_cases[case_bateau + joueur2.plateau.test_directions(config, 2, direction, case_bateau)[0]].coordonnees
-                    print(position)
-                    if direction in self.directions:
-                        self.directions.remove(direction)
-                else:
-                    restart = True
-                    continue
-                #print(self.directions)
-
-            if position in self.table_allowed:
-                # (34,35,36) si case_bateau = 34 et que direction = E, la position 35 n'est déjà plus dans table_allowed, on passe à l'autre case_bateau
-                index = np.argwhere(self.table_allowed == position)
-                self.table_allowed = np.delete(self.table_allowed, index)
-                index = np.argwhere(self.table_allowed_cut == position)
-                self.table_allowed_cut = np.delete(self.table_allowed_cut, index)
-                #self.table_allowed.remove(position)
+        if not self.possibilites:  # Test liste vide
+            # Choix aléatoire dans les cases possibles.
+            if self.table_allowed_cut.size == 0: # Pas de liste prédéfinie
+                position = np.random.choice(self.table_allowed)
             else:
-                restart = True
-                continue
-        #print(position)
-        print(self.table_allowed_cut)
+                position = np.random.choice(self.table_allowed_cut)
+        else:
+            # Index et longueur de la sous-liste la plus grande dans self.possibilites
+            self.index, value = max(enumerate([len(sublist) for sublist in self.possibilites]), key=operator.itemgetter(1))
+            # Liste des coordonnées de la sous-liste
+            subposs = [x[0] for x in self.possibilites[self.index]]
+
+            if len(self.possibilites[self.index]) == 1:
+                case_bateau = subposs[0]
+                self.choose_direction(config, case_bateau, joueur2)
+                direction = secrets.choice(self.directions)
+            else:
+                # Test deux cases bateau adjacentes
+                if len(self.possibilites[self.index]) == 2:
+                    # Vérifier les 2 premiers éléments de la sous-liste
+                    if subposs[0] + 1 == subposs[1]:
+                        self.horizontal = True
+                    elif subposs[0] + config["columns"] == subposs[1]:
+                        self.vertical = True
+
+                # Liste des positions extrêmes de la liste
+                extrem = [subposs[0], subposs[-1]]
+                # Choix aléatoire d'une position
+                indice = secrets.choice([0,1])
+                # Cased bateau choisie
+                case_bateau = extrem[indice]
+                # On essaye avec l'autre case si la liste des directions est vide
+                while True:
+                    try:
+                        direction = self.give_direction(config, joueur2, case_bateau)
+                        break
+                    except IndexError as e:
+                        case_bateau = extrem[(indice + 1)% 2]
+                        direction = self.give_direction(config, joueur2, case_bateau)
+
+            # On attribut la position de tir
+            position = joueur2.plateau.list_cases[case_bateau + joueur2.plateau.test_directions(config, 2, direction, case_bateau)[0]].coordonnees
+
+        # On enlève la position des listes de coordonnées
+        ind = np.argwhere(self.table_allowed == position)
+        self.table_allowed = np.delete(self.table_allowed, ind)
+        ind = np.argwhere(self.table_allowed_cut == position)
+        self.table_allowed_cut = np.delete(self.table_allowed_cut, ind)
+
         return position
+
+    def give_direction(self, config, joueur2, case_bateau):
+        """Donne la direction du tir.
+
+        Args:
+            self.horizontal (boolean): Si le bateau est orienté Est/Ouest.
+            self.vertical (boolean): Si le bateau est orienté Nord/Sud.
+            self.directions (list): Directions restreintes possibles.
+            config (dict): Fichier de configuration.
+            joueur2 (class instance): Instance de la classe Player() du joueur 2.
+            case_bateau (int): Index de la case adjacente de celle sur laquelle on veut tirer.
+
+        Returns:
+            direction (str): Direction du tir.
+
+        .. seealso:: choose_direction()
+        """
+
+        self.choose_direction(config, case_bateau, joueur2)
+
+        if self.horizontal:  # Test 2 éléments côtes à côtes
+            # Intersection des deux sets
+            direction = secrets.choice(list(set(self.direct[2:]).intersection(set(self.directions))))
+        elif self.vertical:  # Test 2 éléments l'un en dessous de l'autre
+            # Intersection des deux sets
+            direction = secrets.choice(list(set(self.direct[:2]).intersection(set(self.directions))))
+
+        return direction
+
+    def choose_direction(self, config, case_bateau, joueur2):
+        """Trouve les directions valides pour le tir suivant.
+
+        Args:
+            config (dict): Fichier de configuration.
+            case_bateau (int): Index de la case adjacente de celle sur laquelle on veut tirer.
+            joueur2 (class instance): Instance de la classe Player() du joueur 2.
+
+        Returns:
+            self.directions (list): Directions utilisables.
+
+        .. seealso:: test_directions(), near_cases().
+        """
+
+        # Set des directions pour lesquelles on ne sort pas du plateau autour de la case poss.
+        out_directions = set({direction : joueur2.plateau.test_directions(config, 2, direction, case_bateau)[1] for direction in self.direct if joueur2.plateau.test_directions(config, 2, direction, case_bateau)[1] == False}.keys())
+        # Set des cases autour de la position contenant un tir ([N,S,E,O]), O sans tir ou en dehors du plateau.
+        cases_autour = joueur2.plateau.near_cases(config, case_bateau, tir = 'our')
+        near_ship = set({direction : cases_autour[i] for i, direction in enumerate(self.direct) if cases_autour[i] != 0}.keys())
+        # On enlève la direction s'il y a un tir
+        self.directions = list(out_directions - near_ship)
+
+    def cases_possibles(self, joueur1, joueur2):
+        """Retourne les cases autour desquelles on a une chance de toucher un bateau.
+
+        Args:
+            joueur1 (class instance): Instance de la classe Player() du joueur 1.
+            joueur2 (class instance): Instance de la classe Player() du joueur 2.
+
+        Returns:
+            self.possibilites (list): Liste de tuples contenant les coordonnées des bateaux ennemis touchés et leur taille.
+
+        .. seealso:: zip(), itertools.groupby(), operator.itemgetter().
+        """
+
+        # Index des bateaux adverses
+        poss = sorted(list({i for i in range(len(joueur2.plateau.list_cases)) if joueur2.plateau.list_cases[i].adv_ship == True}))
+        # Taille du bateau correspondant à l'index
+        boat = [joueur1.plateau.list_cases[i].our_ship for i in range(len(joueur1.plateau.list_cases)) if i in poss]
+
+        # Cré une liste de tuples
+        self.possibilites = list(zip(poss, boat))
+        # Trie les tuples en fonction de la taille du bateau
+        self.possibilites.sort(key=lambda tup: tup[1])
+        # Groupe les bateaux de même taille dans une sous-liste
+        self.possibilites = [list(group) for key, group in itertools.groupby(self.possibilites,operator.itemgetter(1))]
+        # Trie les tuples dans les sous-listes en fonction de la position
+        [sublist.sort(key=lambda tup: tup[0]) for sublist in self.possibilites]
+        # Trie les sous-listes en fonction de leur taille
+        self.possibilites.sort(key=len)
+        # Exemple de retour: [[(65, 2)], [(13, 3)], [(11, 4), (12, 4)]]
+
+    def boat_sink(self, joueur1, joueur2):
+        """Regarde si un bateau est coulé.
+
+        Args:
+            self.possibilites (list): Liste de tuples contenant les coordonnées des bateaux ennemis touchés et leur taille.
+            joueur1 (class instance): Instance de la classe Player() du joueur 1.
+            joueur2 (class instance): Instance de la classe Player() du joueur 2.
+
+        Returns:
+            self.possibilites (list): On enlève les bateaux coulés.
+            self.directions, self.horizontal, self.vertical : On réinitialise les variables.
+            joueur1 (class instance): On comptabile les bateaux restants et perdus.
+        """
+
+        # Test bateau coulé
+        if self.possibilites and self.possibilites[-1][0][1] == len(self.possibilites[-1]):
+            joueur1.ships_left -= 1
+            joueur1.ships_lose += 1
+            self.directions = self.direct.copy()
+            self.horizontal, self.vertical = False, False
+            for sublist in self.possibilites[-1]:
+                # Emplacement dans possibilites des valeurs puis remplacement valeurs dans joueur2.plateau
+                joueur2.plateau.list_cases[sublist[0]].adv_ship = sublist[1]
+            self.possibilites.remove(self.possibilites[-1])
 
     def __str__(self):
         """Affichage de tous les attributs de la classe.
@@ -1264,13 +1359,6 @@ class Battleship(object):
         """Constructeur de la classe.
         """
 
-        self.normal_game()
-        #self.test_IA()
-
-    def normal_game(self):
-        """Routine globale du jeu.
-        """
-
         self.conf = Configuration()
 
         plateau_joueur1 = Plateau(self.conf.config)
@@ -1282,20 +1370,12 @@ class Battleship(object):
             self.joueur2 = PlayerHuman(self.conf, plateau_joueur2)
         elif self.conf.mode == 2:
             self.joueur2 = PlayerIA(self.conf, plateau_joueur2)
-            self.IA = strategie_IA(self.conf)
 
         self.choose_starter()
-        self.play(self.conf.config, Plateau.table)
-
-    def test_IA(self):
-        """Routine de test rapide de la stratégie de l'IA (IA vs IA)
-        """
-        # Autocomplete Configuration
-        # Redo play routine
+        self.play(self.conf.config)
 
     def choose_starter(self):
         """Choix de qui commence.
-
 
         Args:
             self.joueur1 (class instance): Instance de la classe Player() du joueur 1.
@@ -1328,45 +1408,35 @@ class Battleship(object):
             self.joueur2.start = True
             print("{joueur2} commence la partie.".format(joueur2=self.joueur2.name))
 
-    def play(self, config, table):
+    def play(self, config, auto_IA = False):
         """Jeu tour par tour.
 
         Args:
             self.joueur1 (class instance): Instance de la classe Player() du joueur 1.
             self.joueur2 (class instance): Instance de la classe Player() du joueur 2.
             self.aleatoire (boolean): Si le placement est aléatoire (IA) ou non (player).
-            table (list): Coordonnées de toutes les cases du plateau.
+            auto_IA (boolean): Partie IA vs IA automatique.
 
         Raises:
-            ValueError: Erreurs des inputs.
+            ValueError: Un tir à déjà été effectué sur cette position.
 
-        .. seealso:: strategie_naive().
+        .. seealso:: altern_player(), choose_position(), affichage_our_ships(), affichage_our_tir(), cases_possibles(), boat_sink().
         """
 
-        # Mise en place du joueur qui commence la partie
-        if self.joueur1.start == True:
-            first = self.joueur1
-            second = self.joueur2
-        elif self.joueur2.start == True:
-            first = self.joueur2
-            second = self.joueur1
+        # Création de la liste contenant les deux joueurs
+        altern_joueur = self.altern_player()
 
-        altern_joueur = [first, second]
-
-        # Boucle globale
-        n = 0
-        fin_partie = False
+        # Boucle globale du jeu
+        n = 0 # Compteur pour alterner les joueurs
+        fin_partie = False # Variable de fin de partie
         while not fin_partie:
+            # Boucle qui gère les exceptions de l'input
             while not fin_partie:
                 try:
-                    if self.joueur2.aleatoire == True and n % 2 == altern_joueur.index(self.joueur2):
-                        position = self.IA.exec_strategie(self.joueur1, self.joueur2, self.conf.config)
-                        print(self.IA)
-                    else:
-                        position = input("Entrer la case cible de votre tir : ")
-                        if not position in table:
-                            raise ValueError(
-                                "Entrer une case qui est présente sur le plateau.")
+                    print("Au tour de {nom_joueur}.".format(nom_joueur=altern_joueur[n % 2].name))
+                    # Choix de l'emplacement du tir
+                    position = self.choose_position(auto_IA, altern_joueur, n)
+                    # Parcours du plateau
                     for i in range(len(altern_joueur[n % 2].plateau.list_cases)):
                         if altern_joueur[n % 2].plateau.list_cases[i].coordonnees == position:
                             if altern_joueur[n % 2].plateau.list_cases[i].our_tir == False:
@@ -1381,16 +1451,85 @@ class Battleship(object):
                                     altern_joueur[n % 2].plateau.list_cases[i].adv_ship = True
                             elif altern_joueur[n % 2].plateau.list_cases[i].our_tir == True:
                                 raise ValueError("Vous avez déjà tiré sur cette position.")
-                    #print(altern_joueur[n % 2])
+                    print(altern_joueur[n % 2])
+                    # Affichage du plateau
                     altern_joueur[n % 2].plateau.affichage_our_ships(config)
                     altern_joueur[n % 2].plateau.affichage_our_tir(config)
-                    if altern_joueur[n % 2].ships_left == 0:
+                    # Regarde les possibilités de tir
+                    altern_joueur[n % 2].IA.cases_possibles(altern_joueur[(n + 1) % 2], altern_joueur[n % 2])
+                    # Regarde si un bateau est coulé
+                    altern_joueur[n % 2].IA.boat_sink(altern_joueur[(n + 1) % 2], altern_joueur[n % 2])
+                    if altern_joueur[(n + 1)% 2].ships_left == 0:
                         fin_partie = True
                     break
                 except ValueError as VE:
                     print(VE)
             n += 1
-        print("La partie est terminée.\n{gagnant} a gagné !!!".format(gagnant=altern_joueur[n % 2].name))
+        print("La partie est terminée.\n{gagnant} a gagné !!!".format(gagnant=altern_joueur[(n + 1) % 2].name))
+        print(altern_joueur[(n + 1) % 2])
+
+    def altern_player(self):
+        """Mise en place du joueur qui commence la partie.
+
+        Returns:
+            altern_joueur (list): 2 joueurs dans une liste.
+        """
+
+        if self.joueur1.start == True:
+            first = self.joueur1
+            second = self.joueur2
+        elif self.joueur2.start == True:
+            first = self.joueur2
+            second = self.joueur1
+
+        return [first, second]
+
+    def choose_position(self, auto_IA, altern_joueur, n):
+        """Choix de la position en fonction du joueur actuel.
+         - IA vs IA
+         - IA
+         - Joueur
+
+        Args:
+            auto_IA (boolean): Partie IA vs IA automatique.
+            altern_joueur (list):
+
+        Returns:
+            position (str): Coordonnées de la case choisie.
+
+        Raises:
+            ValueError : La case n'appartient pas au plateau.
+
+        .. seealso:: play_IA(), exec_strategie().
+        """
+
+        if auto_IA == True: # IA vs IA
+            position = self.play_IA(n, altern_joueur)
+        elif self.joueur2.aleatoire == True and n % 2 == altern_joueur.index(self.joueur2): # Joueur vs IA
+            position = self.joueur2.IA.exec_strategie(self.joueur1, self.joueur2, self.conf.config)
+        else: # Joueur
+            position = input("Entrer la case cible de votre tir : ")
+            if not position in Plateau.table:
+                raise ValueError(
+                    "Entrer une case qui est présente sur le plateau.")
+
+        return position
+
+    def play_IA(self, n, altern_joueur):
+        """Exécution de la stratégie de l'IA 1 ou de l'IA 2.
+
+        Returns:
+            position (str): Coordonnées de la case choisie.
+
+        .. seealso:: exec_strategie().
+        """
+
+        if n % 2 == altern_joueur.index(self.joueur2):
+            position = self.joueur2.IA.exec_strategie(self.joueur1, self.joueur2, self.conf.config)
+        elif n % 2 == altern_joueur.index(self.joueur1):
+            position = self.joueur1.IA.exec_strategie(self.joueur2, self.joueur1, self.conf.config)
+
+        return position
 
     def __str__(self):
         """Affichage de tous les attributs de la classe.
@@ -1418,6 +1557,28 @@ class Battleship(object):
         raise AttributeError(
             "Vous ne pouvez supprimer aucun attribut de cette classe")
 
+
+class Battleship_IA(Battleship):
+    """Classe définissant une partie IA vs IA
+
+    Hérite des attributs de la classe Battleship.
+    """
+
+    def __init__(self):
+        """Constructeur de la classe.
+        """
+
+        self.conf = Configuration(IA = True)
+
+        # for loop many games
+        plateau_joueur1 = Plateau(self.conf.config)
+        plateau_joueur2 = Plateau(self.conf.config)
+
+        self.joueur1 = PlayerIA(self.conf, plateau_joueur1)
+        self.joueur2 = PlayerIA(self.conf, plateau_joueur2)
+
+        self.joueur1.start = True
+        self.play(self.conf.config, auto_IA = True)
 
 if __name__ == '__main__':
     sys.exit(Battleship())
