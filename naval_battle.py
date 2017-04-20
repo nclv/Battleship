@@ -612,7 +612,7 @@ class Plateau(object):
         # print(cases_autour_boat)
         return test_cases_autour_boat
 
-    def near_cases(self, config, place, tir = []):
+    def near_cases(self, config, place, tir=None):
         """ Regarde s'il y a des bateaux sur les cases adjacentes d'une case
 
         Args:
@@ -1037,8 +1037,7 @@ class Strategie_IA(object):
         Initialisation des différents paramètres se retrouvant tour après tour.
         """
 
-        # Si ce n'est pas un joueur, on attribut une difficulté 
-        if not human:
+        if not human: # Si ce n'est pas un joueur, on attribut une difficulté
             self.choose_difficulte()
         else:
             self.difficulte = None
@@ -1167,7 +1166,7 @@ class Strategie_IA(object):
                 position = np.random.choice(self.table_allowed_cut)
         else:
             # Index et longueur de la sous-liste la plus grande dans self.possibilites
-            self.index, value = max(enumerate([len(sublist) for sublist in self.possibilites]), key=operator.itemgetter(1))
+            self.index = max(enumerate([len(sublist) for sublist in self.possibilites]), key=operator.itemgetter(1))[0]
             # Liste des coordonnées de la sous-liste
             subposs = [x[0] for x in self.possibilites[self.index]]
 
@@ -1195,7 +1194,7 @@ class Strategie_IA(object):
                     try:
                         direction = self.give_direction(config, joueur2, case_bateau)
                         break
-                    except IndexError as e:
+                    except IndexError:
                         case_bateau = extrem[(indice + 1)% 2]
                         direction = self.give_direction(config, joueur2, case_bateau)
 
