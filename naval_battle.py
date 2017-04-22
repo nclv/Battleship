@@ -1,4 +1,4 @@
-#! python3.5
+#! python3.6
 # -*- coding: utf-8 -*-
 
 """ Bataille navale """
@@ -9,11 +9,12 @@
 import sys
 import ast # eval()
 import math
-import numpy as np
+import numpy as np # Array
 import itertools
 import operator
 import secrets # Nombres random
 import string
+import pandas # Affichage plateau
 
 class Configuration(object):
     """Classe de configuration du plateau.
@@ -26,8 +27,11 @@ class Configuration(object):
         difficulte_IA (int): Difficulté de l'IA.
     """
 
-    def __init__(self, IA = False):
+    def __init__(self, IA=False):
         """Initialisation de la classe.
+
+        Args:
+            IA (boolean): Variable optionnelle pour les parties IA vs IA (moins de paramètres de configuration)
         """
 
         if IA == False:
@@ -36,8 +40,8 @@ class Configuration(object):
             self.choose_gamemode()
             self.choose_config()
         elif IA == True:
-            self.file_name = 'configs'
-            self.mode = 3
+            self.file_name = 'configs' # Nom de fichier standard
+            self.mode = 3 # IA vs IA
             self.choose_config()
 
     def new_configuration(self):
@@ -83,9 +87,10 @@ class Configuration(object):
 
         while True:
             try:
+                # Nombre de bateaux autorisés
+                nb_ships_allowed = self.ships_rules()
                 ships_values = list(map(int, input(
-                    'Entrer à la suite les nombres de bateaux de tailles 2,3,4 et 5 séparés par une virgule : ').split(',')))
-                # print(ships_values)
+                    "Entrer à la suite les nombres de bateaux de tailles 2,3,4 et 5 séparés par une virgule. \n{} bateaux sont autorisés au maximum. \n>>".format(nb_ships_allowed)).split(',')))
 
                 # Test de l'input
                 if len(ships_values) != 4:
@@ -96,16 +101,12 @@ class Configuration(object):
 
                 # Test d'un nombre de bateaux valide
                 self.nb_tot_ships = sum([i for i in ships_values])
-                # print(nb_tot_ships)
-                nb_ships_allowed = self.ships_rules()
                 if self.nb_tot_ships > nb_ships_allowed:
                     raise ValueError(
-                        "Vous avez entré un nombre total de bateaux trop élevé par rapport à la taille du plateau.")
+                        "Vous avez entré un nombre total de bateaux trop élevé par rapport à la taille du plateau. \n{} bateaux sont autorisés au maximum.".format(nb_ships_allowed))
 
-                # Vérification qu'il n'y a pas nb_ships_taille_sup >
-                # nb_ships_taille_inf.
+                # Vérification qu'il n'y a pas nb_ships_taille_sup > nb_ships_taille_inf.
                 for x, y in zip(ships_values, ships_values[1:]):
-                    #print(x, y)
                     if x < y:
                         raise ValueError(
                             "Vous avez plus de bateaux de taille {} que de bateaux de taille {}.".format(y, x))
@@ -194,7 +195,6 @@ class Configuration(object):
                     config_sorted = config_list[num_conf - 1]
 
                     # Tests pour vérifier que la configuration est valide
-                    # (colonnes/lignes)
                     if config_sorted[0][1] > 26 or config_sorted[0][1] < 10:
                         raise ValueError(
                             "Configuration choisie invalide. \nLe nombre de colonnes doit être un entier compris entre 10 et 26. \nModifier le fichier de configuration correspondant.")
@@ -208,15 +208,14 @@ class Configuration(object):
 
                     # Test d'un nombre de bateaux valide
                     self.nb_tot_ships = sum([i for i in config_sorted[2][1].values()])
-                    # print(nb_tot_ships)
+                    # Nombre de bateaux autorisés
                     nb_ships_allowed = self.ships_rules()
 
                     if self.nb_tot_ships > nb_ships_allowed:
                         raise ValueError(
-                            "Configuration choisie invalide. \nVous avez un nombre total de bateaux trop élevé par rapport à la taille du plateau. \nModifier le fichier de configuration correspondant.")
+                            "Configuration choisie invalide. \nVous avez un nombre total de bateaux trop élevé par rapport à la taille du plateau. \n{} bateaux sont autorisés au maximum. \nModifier le fichier de configuration correspondant.".format(nb_ships_allowed))
 
-                    # Vérification qu'il n'y a pas nb_ships_taille_sup >
-                    # nb_ships_taille_inf.
+                    # Vérification qu'il n'y a pas nb_ships_taille_sup > nb_ships_taille_inf.
                     for i in range(3):
                         if config_sorted[2][1][i + 2] < config_sorted[2][1][i + 3]:
                             raise ValueError(
@@ -280,7 +279,6 @@ class Configuration(object):
             f = open(self.file_name, "w")
             f.close()
 
-        #print(config_list) # Liste de tuples
         return config_list_sorted
 
     def ships_rules(self):
@@ -296,26 +294,19 @@ class Configuration(object):
         # Tableau des nb de colones/lignes possibles
         liste_coord = [i for i in range(10, 27)]
         # Multiplication croisée, remove duplicates, tri par ordre croissant.
-        prod_liste_coord = sorted(
-            list(set([i * j for i in liste_coord for j in liste_coord])))
-        # print(prod_liste_coord)
-
+        prod_liste_coord = sorted(list(set([i * j for i in liste_coord for j in liste_coord])))
         # Affichage 0 si c'est une puissance entière
         sqrt_prod_liste_coord = [(math.sqrt(i) % 2) for i in prod_liste_coord]
-
         # Trouve l'emplacement des 0
         indices = [i for i, x in enumerate(sqrt_prod_liste_coord) if x == 0]
-        # print(indices)
 
         nb_tot_cases = self.config["lines"] * self.config["columns"]  # Nombre de cases total
 
         nb_ships_allowed = 5  # Nombre de bateaux minimum (10*10)
         for i in indices:
             if prod_liste_coord.index(nb_tot_cases) >= i:
-                # print(i)
                 nb_ships_allowed += 1
         nb_ships_allowed -= 1
-        # print(nb_ships_allowed)
 
         return nb_ships_allowed
 
@@ -400,6 +391,7 @@ class Case(object):
             self.coordonnees, self.our_tir, self.adv_tir, self.our_ship, self.adv_ship)
 
     def __repr__(self):
+        """Affichage de la classe. """
         return self.__str__()
 
     def __getattr__(self, name):
@@ -412,7 +404,6 @@ class Case(object):
 
         Raises:
             AttributeError: Erreurs d'attribut.
-
         """
 
         raise AttributeError(
@@ -439,10 +430,6 @@ class Plateau(object):
         """
 
         Plateau.table = self.gen_coordonnees(config)
-
-        # Affichage des coordonnées
-        #for i in range(0, config["lines"] * config["columns"], config["columns"]):
-        #   print(table[i:i + config["columns"]])
 
         self.list_cases = []
         # Affichage des objets
@@ -482,9 +469,9 @@ class Plateau(object):
                 restart = False
                 placed = False  # Variable True si un bateau complet à été placé
                 if joueur.aleatoire == True:
-                    taille, place, direction, configships, taille_list = self.alea_input_rules(configships, table, taille_list)
+                    taille, place, direction, taille_list = self.alea_input_rules(configships, table, taille_list)
                 else:
-                    taille, place, direction, configships = self.user_input_rules(configships, table)
+                    taille, place, direction = self.user_input_rules(configships, table)
                 for i, value in enumerate(self.list_cases):  # Parcours de la liste d'objets
                     coordonnees = value.coordonnees
                     if coordonnees == place:  # Si on arrive aux coordonnées entrées
@@ -497,8 +484,7 @@ class Plateau(object):
                             break
                         restart, placed = self.placement_boat_sub(joueur, config, taille, deplacement, i, restart, placed)
                         if placed:
-                            # On décrémente de 1 le nb de bateaux de cette
-                            # taille
+                            # On décrémente de 1 le nb de bateaux de cette taille
                             configships[taille] -= 1
                             restant -= 1
                             if not joueur.aleatoire:
@@ -609,7 +595,7 @@ class Plateau(object):
             cases_autour_boat.extend(self.near_cases(config, i + deplacement[0] * j))
 
         test_cases_autour_boat = len(cases_autour_boat) != cases_autour_boat.count(0) + cases_autour_boat.count(taille) or cases_autour_boat.count(taille) > taille
-        # print(cases_autour_boat)
+
         return test_cases_autour_boat
 
     def near_cases(self, config, place, tir=None):
@@ -618,6 +604,7 @@ class Plateau(object):
         Args:
             config (dict): Fichier de configuration.
             place (int): Emplacement de la case bateau.
+            tir (str): Pour retourner si l'on a tiré autour de la case
 
         Returns:
             cases_autour (list): Liste des cases autour d'une case bateau.
@@ -637,7 +624,6 @@ class Plateau(object):
             except IndexError:
                 cases_autour.append(0)
 
-        # print(cases_autour)
         return cases_autour
 
     def affichage_our_ships(self, config):
@@ -649,15 +635,15 @@ class Plateau(object):
 
         print("Bateaux du joueur :")
         j_ships = [int(self.list_cases[i].our_ship) for i in range(0, config["lines"] * config["columns"])]
-
+        # Affichage d'une croix sur la case touchée
         for i, j in enumerate(j_ships):
             if j != 0 and int(self.list_cases[i].adv_tir) == 1:
                 j_ships[i] = 'x'
 
-        [print(j_ships[i:i + config["columns"]]) for i in range(0, config["lines"] * config["columns"], config["columns"])]
+        self.sub_affichage(config, j_ships)
         print("Tirs de l'adversaire :")
         adv_tir = [int(self.list_cases[i].adv_tir) for i in range(0, config["lines"] * config["columns"])]
-        [print(adv_tir[i:i + config["columns"]]) for i in range(0, config["lines"] * config["columns"], config["columns"])]
+        self.sub_affichage(config, adv_tir)
 
     def affichage_our_tir(self, config):
         """ Affichage de là ou a tiré le joueur.
@@ -668,14 +654,25 @@ class Plateau(object):
 
         print("Tirs du joueur :")
         j_fire = [int(self.list_cases[i].our_tir) for i in range(0, config["lines"] * config["columns"])]
-        [print(j_fire[i:i + config["columns"]]) for i in range(0, config["lines"] * config["columns"], config["columns"])]
+        self.sub_affichage(config, j_fire)
 
-    @staticmethod # Pas de self car ne dépend pas de l'instance créée et est valable pour toutes
-    def gen_coordonnees(config):
+    def sub_affichage(self, config, attr):
+        """ Affichage formaté.
+
+        Args:
+            config (dict): Fichier de configuration.
+            attr (list): Liste d'attributs à afficher.
+        """
+
+        # Création d'un array pour l'affichage
+        tab = np.array([attr[i:i + config["columns"]] for i in range(0, config["lines"] * config["columns"], config["columns"])])
+        # Affichage avec le module pandas
+        print(pandas.DataFrame(tab, self.abscisses, self.ordonnes))
+
+    def gen_coordonnees(self, config):
         """Cré un plateau de jeu pouvant aller jusqu'à 26*26 cases.
         - Axe vertical : A - Z.
         - Axe horizontal : 0 - 26.
-
         Affichage du plateau généré
 
         Args:
@@ -685,18 +682,15 @@ class Plateau(object):
             table (list): Coordonnées de toutes les cases du plateau.
 
         .. seealso:: itertools.product()
-
         """
 
         # Génération des coordonnées :
         # Lettres de l'alphabet en ordonnée selon le nb de lignes voulues
-        ordonnes = list(string.ascii_uppercase[:config["lines"]])
+        self.ordonnes = list(string.ascii_uppercase[:config["lines"]])
         # En abscisse les chiffres correspondant
-        abscisses = [str(i) for i in range(config["columns"])]
-        # print(ordonnes,abscisses)
-
+        self.abscisses = [str(i) for i in range(config["columns"])]
         # On transforme les couples lettre/chiffre en string
-        table = ["".join(value) for value in list(itertools.product(ordonnes, abscisses))]
+        table = ["".join(value) for value in list(itertools.product(self.ordonnes, self.abscisses))]
 
         return table
 
@@ -752,7 +746,7 @@ class Plateau(object):
             except ValueError as VE:
                 print(VE)
 
-        return taille, place, direction, configships
+        return taille, place, direction
 
     @staticmethod
     def alea_input_rules(configships, table, taille_list):
@@ -787,9 +781,7 @@ class Plateau(object):
         place = secrets.choice(table)
         direction = secrets.choice(['N', 'S', 'E', 'O'])
 
-        #print(taille, place, direction)
-
-        return taille, place, direction, configships, taille_list
+        return taille, place, direction, taille_list
 
     def __str__(self):
         """Affichage de tous les attributs de la classe.
@@ -828,6 +820,7 @@ class Player(object):
         ships_lose (int): Nombre de bateaux perdus.
         ships_hit (int): Nombre de cases bateaux touchées.
         aleatoire (boolean): Variable utile au placement.
+        IA (class instance): IA derrière le joueur.
     """
 
     def __init__(self, conf, plateau_joueur):
@@ -976,7 +969,6 @@ class PlayerHuman(Player):
                 plateau_joueur.placement_boat(self, nb_tot_ships, config, table, near=False)
 
             self.aleatoire = False
-
         plateau_joueur.affichage_our_ships(config)
 
 
@@ -1050,7 +1042,6 @@ class Strategie_IA(object):
         if self.difficulte == 2:
             self.quadrillage_list(conf.config) # Une case sur deux
 
-        self.out_poss = []
         self.horizontal = False
         self.vertical = False
         self.direct = ['N', 'S', 'E', 'O']
@@ -1579,5 +1570,24 @@ class Battleship_IA(Battleship):
         self.joueur1.start = True
         self.play(self.conf.config, auto_IA = True)
 
+def main():
+    """Routine globale.
+    """
+
+    while True:
+        try:
+            test = int(input(
+                "Entrer 1 pour une partie nomale et 2 pour une partie entre deux IA. \n> "))
+            if not test in [1,2]:
+                raise ValueError("Entrer 1 ou 2.")
+            break
+        except ValueError as VE:
+            print(VE)
+
+    if test == 1:
+        Battleship()
+    elif test == 2:
+        Battleship_IA()
+
 if __name__ == '__main__':
-    sys.exit(Battleship())
+    sys.exit(main())
