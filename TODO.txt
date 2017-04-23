@@ -11,6 +11,7 @@ Placement aléatoire sans toucher les bords (1 max ou au choix)
 
 Choix configuration plateau - position des navires prédéfinie pour être moins touché
 -- Espacer les navires d'une case OU les grouper dans un coin
+Génération aléatoire du plateau
 
 Plusieurs difficultés de l'IA :
 - différentes stratégies - découpage du plateau en 2 / 3 / 4.

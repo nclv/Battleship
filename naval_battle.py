@@ -1,20 +1,18 @@
 #! python3.6
 # -*- coding: utf-8 -*-
 
-""" Bataille navale """
-
-# Auteur : Nicolas Vincent T°S5
-# 2017
+"""naval_battle.py: Jeu de bataille navale. """
 
 import sys
+import argparse # Add command-line arguments support
 import ast # eval()
 import math
-import numpy as np # Array
 import itertools
 import operator
 import secrets # Nombres random
 import string
 import pandas # Affichage plateau
+import numpy as np # Array
 
 class Configuration(object):
     """Classe de configuration du plateau.
@@ -27,22 +25,83 @@ class Configuration(object):
         difficulte_IA (int): Difficulté de l'IA.
     """
 
-    def __init__(self, IA=False):
+    def __init__(self, args, parser):
         """Initialisation de la classe.
 
         Args:
             IA (boolean): Variable optionnelle pour les parties IA vs IA (moins de paramètres de configuration)
         """
 
-        if IA == False:
-            self.difficulte_IA = None
-            self.choose_file()
+        self.filename = args.filename
+        self.mode = args.mode
+        self.config = dict()
+
+        # Vérification des input création et choix de configuration
+        self.verif_parser(args, parser)
+        # Test des options sur le cmd
+        if self.mode is None:
             self.choose_gamemode()
+        if self.filename is None:
+            self.choose_file()
+        if not hasattr(args, 'columns') and args.exist_config is None:
             self.choose_config()
-        elif IA == True:
-            self.file_name = 'configs' # Nom de fichier standard
-            self.mode = 3 # IA vs IA
-            self.choose_config()
+        # Ajout de la configuration crée au fichier
+        self.add_config()
+
+        self.difficulte_IA = None
+
+    def verif_parser(self, args, parser):
+        """Vérification des entrées en ligne de commande.
+        """
+
+        # Deux attributs exclusifs
+        if hasattr(args, 'columns'):
+            self.config["columns"] = args.columns
+            self.config["lines"] = args.lines
+            # Nombre de bateaux autorisés
+            self.ships_rules()
+            # Liste des bateaux
+            args.boat = list(map(int, args.boat.split(',')))
+            if len(args.boat) != 4:
+                parser.error('Il existe seulement 4 types de bateaux différents et non {}.'.format(len(args.boat)))
+            self.nb_tot_ships = sum([i for i in args.boat])
+            if self.nb_tot_ships > self.nb_ships_allowed:
+                parser.error('{} bateaux sont autorisés au maximum.'.format(self.nb_ships_allowed))
+            # Vérification qu'il n'y a pas nb_ships_taille_sup > nb_ships_taille_inf.
+            for x, y in zip(args.boat, args.boat[1:]):
+                if x < y:
+                    parser.error("Vous avez plus de bateaux de taille {} que de bateaux de taille {}.".format(y, x))
+            self.config["ships"] = {2: args.boat[0], 3: args.boat[1], 4: args.boat[2], 5: args.boat[3]}
+        elif args.exist_config is not None:
+            config_list = self.read_config()
+            if not args.exist_config in range(1, len(config_list) + 1):
+                parser.error("Entrer un nombre compris entre 1 et {}.".format(len(config_list)))
+            # Liste de tuples contenant la configuration choisie
+            config_sorted = config_list[args.exist_config - 1]
+            # Tests pour vérifier que la configuration est valide
+            if config_sorted[0][1] > 26 or config_sorted[0][1] < 10:
+                parser.error(
+                    "Configuration choisie invalide. \nLe nombre de colonnes doit être un entier compris entre 10 et 26. \nModifier le fichier de configuration correspondant.")
+            else:
+                self.config["columns"] = config_sorted[0][1]
+            if config_sorted[1][1] > 26 or config_sorted[1][1] < 10:
+                parser.error(
+                    "Configuration choisie invalide. \nLe nombre de lignes doit être un entier compris entre 10 et 26. \nModifier le fichier de configuration correspondant.")
+            else:
+                self.config["lines"] = config_sorted[1][1]
+            # Nombre de bateaux autorisés
+            self.ships_rules()
+            # Test d'un nombre de bateaux valide
+            self.nb_tot_ships = sum([i for i in config_sorted[2][1].values()])
+            if self.nb_tot_ships > self.nb_ships_allowed:
+                parser.error(
+                    "Configuration choisie invalide. \nVous avez un nombre total de bateaux trop élevé par rapport à la taille du plateau. \n{} bateaux sont autorisés au maximum. \nModifier le fichier de configuration correspondant.".format(self.nb_ships_allowed))
+            # Vérification qu'il n'y a pas nb_ships_taille_sup > nb_ships_taille_inf.
+            for i in range(3):
+                if config_sorted[2][1][i + 2] < config_sorted[2][1][i + 3]:
+                    parser.error(
+                        "Configuration choisie invalide. \nVous avez plus de bateaux de taille {} que de bateaux de taille {}. \nModifier le fichier de configuration correspondant.".format(i + 3, i + 2))
+            self.config["ships"] = config_sorted[2][1]
 
     def new_configuration(self):
         """Cré une configuration contenant la taille du plateau, le nombre de bateaux et
@@ -66,7 +125,7 @@ class Configuration(object):
         while True:
             try:
                 columns = int(input('Entrer le nombre de colones (10-26): '))
-                if columns > 26 or columns < 10:
+                if not(10 < columns < 26):
                     raise ValueError("Le nombre de colonnes doit être un entier compris entre 10 et 26.")
                 break
             except ValueError as VE:
@@ -77,7 +136,7 @@ class Configuration(object):
         while True:
             try:
                 lines = int(input('Entrer le nombre de lignes (10-26): '))
-                if lines > 26 or lines < 10:
+                if not(10 < lines < 26):
                     raise ValueError("Le nombre de lignes doit être un entier compris entre 10 et 26.")
                 break
             except ValueError as VE:
@@ -87,10 +146,8 @@ class Configuration(object):
 
         while True:
             try:
-                # Nombre de bateaux autorisés
-                nb_ships_allowed = self.ships_rules()
                 ships_values = list(map(int, input(
-                    "Entrer à la suite les nombres de bateaux de tailles 2,3,4 et 5 séparés par une virgule. \n{} bateaux sont autorisés au maximum. \n>>".format(nb_ships_allowed)).split(',')))
+                    "Entrer à la suite les nombres de bateaux de tailles 2,3,4 et 5 séparés par une virgule. \n{} bateaux sont autorisés au maximum. \n>>".format(self.nb_ships_allowed)).split(',')))
 
                 # Test de l'input
                 if len(ships_values) != 4:
@@ -101,9 +158,9 @@ class Configuration(object):
 
                 # Test d'un nombre de bateaux valide
                 self.nb_tot_ships = sum([i for i in ships_values])
-                if self.nb_tot_ships > nb_ships_allowed:
+                if self.nb_tot_ships > self.nb_ships_allowed:
                     raise ValueError(
-                        "Vous avez entré un nombre total de bateaux trop élevé par rapport à la taille du plateau. \n{} bateaux sont autorisés au maximum.".format(nb_ships_allowed))
+                        "Vous avez entré un nombre total de bateaux trop élevé par rapport à la taille du plateau. \n{} bateaux sont autorisés au maximum.".format(self.nb_ships_allowed))
 
                 # Vérification qu'il n'y a pas nb_ships_taille_sup > nb_ships_taille_inf.
                 for x, y in zip(ships_values, ships_values[1:]):
@@ -114,10 +171,13 @@ class Configuration(object):
             except ValueError as VE:
                 print(VE)
 
-        ships = {5: ships_values[3], 4: ships_values[2], 3: ships_values[
-            1], 2: ships_values[0]}  # taille : nombre
+        ships = {2: args.boat[0], 3: args.boat[1], 4: args.boat[2], 5: args.boat[3]}  # taille : nombre
 
         self.config["ships"] = ships
+
+    def add_config(self):
+        """Ajoute la configuration crée au fichier.
+        """
 
         # On trie le dictionnaire de configuration
         config_sorted = sorted(self.config.items(), key=lambda t: t[0])
@@ -144,7 +204,7 @@ class Configuration(object):
 
         while True:
             try:
-                self.file_name = input("Entrer le nom du fichier de configuration(lettres/chiffres), en cas de mauvaise entrée le fichier 'configs' est défini par défaut.\n> ")
+                self.file_name = input("Entrer le nom du fichier de configuration(lettres/chiffres), en cas de mauvaise entrée le fichier 'configs' est défini par défaut.\nVous pouvez entrer ce fichier si vous ne comprenez pas cet input.\n> ")
                 if not self.file_name.isalnum():
                     self.file_name = 'configs'
                 if not self.confirm_input():
@@ -170,7 +230,8 @@ class Configuration(object):
             except ValueError as VE:
                 print(VE)
 
-        self.config = dict()
+        # Nombre de bateaux autorisés
+        self.ships_rules()
 
         if conf == 1:
             print("Veuillez remplir les paramètres de la configuration de la partie à laquelle vous allez jouer.")
@@ -208,12 +269,10 @@ class Configuration(object):
 
                     # Test d'un nombre de bateaux valide
                     self.nb_tot_ships = sum([i for i in config_sorted[2][1].values()])
-                    # Nombre de bateaux autorisés
-                    nb_ships_allowed = self.ships_rules()
 
-                    if self.nb_tot_ships > nb_ships_allowed:
+                    if self.nb_tot_ships > self.nb_ships_allowed:
                         raise ValueError(
-                            "Configuration choisie invalide. \nVous avez un nombre total de bateaux trop élevé par rapport à la taille du plateau. \n{} bateaux sont autorisés au maximum. \nModifier le fichier de configuration correspondant.".format(nb_ships_allowed))
+                            "Configuration choisie invalide. \nVous avez un nombre total de bateaux trop élevé par rapport à la taille du plateau. \n{} bateaux sont autorisés au maximum. \nModifier le fichier de configuration correspondant.".format(self.nb_ships_allowed))
 
                     # Vérification qu'il n'y a pas nb_ships_taille_sup > nb_ships_taille_inf.
                     for i in range(3):
@@ -285,7 +344,7 @@ class Configuration(object):
         """ Vérifie que le nombre total de bateaux n'est pas trop élevé.
 
         Returns:
-            nb_ships_allowed (int): Nombre de bateaux autorisés.
+            self.nb_ships_allowed (int): Nombre de bateaux autorisés.
 
         .. seealso:: math.sqrt().
 
@@ -294,7 +353,7 @@ class Configuration(object):
         # Tableau des nb de colones/lignes possibles
         liste_coord = [i for i in range(10, 27)]
         # Multiplication croisée, remove duplicates, tri par ordre croissant.
-        prod_liste_coord = sorted(list(set([i * j for i in liste_coord for j in liste_coord])))
+        prod_liste_coord = sorted(list({i * j for i in liste_coord for j in liste_coord}))
         # Affichage 0 si c'est une puissance entière
         sqrt_prod_liste_coord = [(math.sqrt(i) % 2) for i in prod_liste_coord]
         # Trouve l'emplacement des 0
@@ -302,16 +361,14 @@ class Configuration(object):
 
         nb_tot_cases = self.config["lines"] * self.config["columns"]  # Nombre de cases total
 
-        nb_ships_allowed = 5  # Nombre de bateaux minimum (10*10)
+        self.nb_ships_allowed = 5  # Nombre de bateaux minimum (10*10)
         for i in indices:
             if prod_liste_coord.index(nb_tot_cases) >= i:
-                nb_ships_allowed += 1
-        nb_ships_allowed -= 1
+                self.nb_ships_allowed += 1
+        self.nb_ships_allowed -= 1
 
-        return nb_ships_allowed
-
-    @classmethod
-    def confirm_input(cls):
+    @staticmethod
+    def confirm_input():
         """Demande de confirmer l'entrée.
         """
 
@@ -338,22 +395,6 @@ class Configuration(object):
 
     def __repr__(self):
         return self.__str__()
-
-    def __getattr__(self, name):
-        """Est appelée quand on demande un attribut appelé "name" et qu'il n'existe pas."""
-
-        return None
-
-    def __delattr__(self, nom_attr):
-        """On ne peut supprimer d'attribut, on lève l'exception AttributeError.
-
-        Raises:
-            AttributeError: Erreurs d'attribut.
-
-        """
-
-        raise AttributeError(
-            "Vous ne pouvez supprimer aucun attribut de cette classe")
 
 
 class Case(object):
@@ -393,21 +434,6 @@ class Case(object):
     def __repr__(self):
         """Affichage de la classe. """
         return self.__str__()
-
-    def __getattr__(self, name):
-        """Est appelée quand on demande un attribut appelé "name" et qu'il n'existe pas."""
-
-        return None
-
-    def __delattr__(self, nom_attr):
-        """On ne peut supprimer d'attribut, on lève l'exception AttributeError.
-
-        Raises:
-            AttributeError: Erreurs d'attribut.
-        """
-
-        raise AttributeError(
-            "Vous ne pouvez supprimer aucun attribut de cette classe")
 
 
 class Plateau(object):
@@ -792,21 +818,6 @@ class Plateau(object):
 
         return "Liste des objets Case(): {}\n".format(self.list_cases)
 
-    def __getattr__(self, name):
-        """Est appelée quand on demande un attribut appelé "name" et qu'il n'existe pas."""
-
-        return None
-
-    def __delattr__(self, nom_attr):
-        """On ne peut supprimer d'attribut, on lève l'exception AttributeError.
-
-        Raises:
-            AttributeError: Erreurs d'attribut.
-        """
-
-        raise AttributeError(
-            "Vous ne pouvez supprimer aucun attribut de cette classe")
-
 
 class Player(object):
     """Classe représentant un joueur.
@@ -885,20 +896,6 @@ class Player(object):
         return "Nom : {},\nA commencé la partie : {},\nNombre de tirs effectués : {},\nNombre de bateaux restant : {},\nNombre de bateaux coulés : {},\nNombre de cases bateau touchées : {},\nValeur du placement aléatoire : {}\n".format(
             self.name, self.start, self.tir, self.ships_left, self.ships_lose, self.ships_hit, self.aleatoire)
 
-    def __getattr__(self, name):
-        """Est appelée quand on demande un attribut appelé "name" et qu'il n'existe pas."""
-
-        return None
-
-    def __delattr__(self, nom_attr):
-        """On ne peut supprimer d'attribut, on lève l'exception AttributeError.
-
-        Raises:
-            AttributeError: Erreurs d'attribut.
-        """
-
-        raise AttributeError(
-            "Vous ne pouvez supprimer aucun attribut de cette classe")
 
 class PlayerHuman(Player):
     """Classe représentant un joueur humain.
@@ -914,11 +911,11 @@ class PlayerHuman(Player):
 
         super().__init__(conf, plateau_joueur)
         self.aleatoire = False
-        self.gen_Human(conf.config, conf.nb_tot_ships, Plateau.table, plateau_joueur)
-        self.IA = Strategie_IA(conf, human = True) # IA latente qui ne fait qu'un record des possibilités
+        self.genHuman(conf.config, conf.nb_tot_ships, Plateau.table, plateau_joueur)
+        self.IA = StrategieIA(conf, human = True) # IA latente qui ne fait qu'un record des possibilités
         # Utilité pour un passage joueur - IA en cours de partie ?
 
-    def gen_Human(self, config, nb_tot_ships, table, plateau_joueur):
+    def genHuman(self, config, nb_tot_ships, table, plateau_joueur):
         """Génère le plateau et les attributs d'un joueur.
 
         Args:
@@ -986,10 +983,10 @@ class PlayerIA(Player):
 
         super().__init__(conf, plateau_joueur)
         self.aleatoire = True
-        self.gen_IA(conf.config, conf.nb_tot_ships, Plateau.table, plateau_joueur)
-        self.IA = Strategie_IA(conf)
+        self.genIA(conf.config, conf.nb_tot_ships, Plateau.table, plateau_joueur)
+        self.IA = StrategieIA(conf)
 
-    def gen_IA(self, config, nb_tot_ships, table, plateau_joueur):
+    def genIA(self, config, nb_tot_ships, table, plateau_joueur):
         """Génère le plateau et les attributs d'un joueur.
 
         Args:
@@ -1010,7 +1007,7 @@ class PlayerIA(Player):
         plateau_joueur.affichage_our_ships(config)
 
 
-class Strategie_IA(object):
+class StrategieIA(object):
     """Stratégie de l'IA en fonction de la difficulté en prennant en compte les coups précédents.
 
     Attributes:
@@ -1042,6 +1039,7 @@ class Strategie_IA(object):
         if self.difficulte == 2:
             self.quadrillage_list(conf.config) # Une case sur deux
 
+        self.possibilites = []
         self.horizontal = False
         self.vertical = False
         self.direct = ['N', 'S', 'E', 'O']
@@ -1114,7 +1112,6 @@ class Strategie_IA(object):
         position = np.random.choice(self.table_allowed)
         index = np.argwhere(self.table_allowed == position)
         self.table_allowed = np.delete(self.table_allowed, index)
-        #self.table_allowed.remove(position)
 
         return position
 
@@ -1243,7 +1240,9 @@ class Strategie_IA(object):
         """
 
         # Set des directions pour lesquelles on ne sort pas du plateau autour de la case poss.
-        out_directions = set({direction : joueur2.plateau.test_directions(config, 2, direction, case_bateau)[1] for direction in self.direct if joueur2.plateau.test_directions(config, 2, direction, case_bateau)[1] == False}.keys())
+        out_directions = set({direction : joueur2.plateau.test_directions(
+                            config, 2, direction, case_bateau)[1] for direction in self.direct if joueur2.plateau.test_directions(
+                            config, 2, direction, case_bateau)[1] == False}.keys())
         # Set des cases autour de la position contenant un tir ([N,S,E,O]), O sans tir ou en dehors du plateau.
         cases_autour = joueur2.plateau.near_cases(config, case_bateau, tir = 'our')
         near_ship = set({direction : cases_autour[i] for i, direction in enumerate(self.direct) if cases_autour[i] != 0}.keys())
@@ -1318,22 +1317,8 @@ class Strategie_IA(object):
             self.direct (list): Toutes directions possibles.
         """
 
-        return "Difficulté : {},\nCoordonnées libres : {},\nCase contenant un bateau : {},\nOrientation horizontale : {},\nOrientation verticale : {},\nToutes les directions : {},\nDirections possibles : {},\n".format(self.difficulte, self.table_allowed, self.possibilites, self.horizontal, self.vertical, self.direct, self.directions)
-
-    def __getattr__(self, name):
-        """Est appelée quand on demande un attribut appelé "name" et qu'il n'existe pas."""
-
-        return None
-
-    def __delattr__(self, nom_attr):
-        """On ne peut supprimer d'attribut, on lève l'exception AttributeError.
-
-        Raises:
-            AttributeError: Erreurs d'attribut.
-        """
-
-        raise AttributeError(
-            "Vous ne pouvez supprimer aucun attribut de cette classe")
+        return "Difficulté : {},\nCoordonnées libres : {},\nCase contenant un bateau : {},\nOrientation horizontale : {},\nOrientation verticale : {},\nToutes les directions : {},\nDirections possibles : {},\n".format(
+                self.difficulte, self.table_allowed, self.possibilites, self.horizontal, self.vertical, self.direct, self.directions)
 
 
 class Battleship(object):
@@ -1345,24 +1330,29 @@ class Battleship(object):
         conf (class instance): Instance de la classe Configuration().
     """
 
-    def __init__(self):
+    def __init__(self, args, parser):
         """Constructeur de la classe.
         """
 
-        self.conf = Configuration()
+        self.conf = Configuration(args, parser)
 
         plateau_joueur1 = Plateau(self.conf.config)
         plateau_joueur2 = Plateau(self.conf.config)
 
-        self.joueur1 = PlayerHuman(self.conf, plateau_joueur1)
-
-        if self.conf.mode == 1:
-            self.joueur2 = PlayerHuman(self.conf, plateau_joueur2)
-        elif self.conf.mode == 2:
+        if self.conf.mode != 3:
+            if self.conf.mode == 1:
+                self.joueur1 = PlayerHuman(self.conf, plateau_joueur1)
+                self.joueur2 = PlayerHuman(self.conf, plateau_joueur2)
+            elif self.conf.mode == 2:
+                self.joueur1 = PlayerHuman(self.conf, plateau_joueur1)
+                self.joueur2 = PlayerIA(self.conf, plateau_joueur2)
+            self.choose_starter()
+            self.play(self.conf.config)
+        elif self.conf.mode == 3:
+            self.joueur1 = PlayerIA(self.conf, plateau_joueur1)
             self.joueur2 = PlayerIA(self.conf, plateau_joueur2)
-
-        self.choose_starter()
-        self.play(self.conf.config)
+            self.joueur1.start = True
+            self.play(self.conf.config, auto_IA=True)
 
     def choose_starter(self):
         """Choix de qui commence.
@@ -1427,7 +1417,7 @@ class Battleship(object):
                     # Choix de l'emplacement du tir
                     position = self.choose_position(auto_IA, altern_joueur, n)
                     # Parcours du plateau
-                    for i in range(len(altern_joueur[n % 2].plateau.list_cases)):
+                    for i in range(config["columns"] * config["lines"]):
                         if altern_joueur[n % 2].plateau.list_cases[i].coordonnees == position:
                             if altern_joueur[n % 2].plateau.list_cases[i].our_tir == False:
                                 # 1 tir de plus effectué
@@ -1490,11 +1480,11 @@ class Battleship(object):
         Raises:
             ValueError : La case n'appartient pas au plateau.
 
-        .. seealso:: play_IA(), exec_strategie().
+        .. seealso:: playIA(), exec_strategie().
         """
 
         if auto_IA == True: # IA vs IA
-            position = self.play_IA(n, altern_joueur)
+            position = self.playIA(n, altern_joueur)
         elif self.joueur2.aleatoire == True and n % 2 == altern_joueur.index(self.joueur2): # Joueur vs IA
             position = self.joueur2.IA.exec_strategie(self.joueur1, self.joueur2, self.conf.config)
         else: # Joueur
@@ -1505,7 +1495,7 @@ class Battleship(object):
 
         return position
 
-    def play_IA(self, n, altern_joueur):
+    def playIA(self, n, altern_joueur):
         """Exécution de la stratégie de l'IA 1 ou de l'IA 2.
 
         Returns:
@@ -1532,62 +1522,45 @@ class Battleship(object):
 
         return "Configuration : {},\nJoueur 1 : {},\nJoueur 2 : {}\n".format(self.conf, self.joueur1, self.joueur2)
 
-    def __getattr__(self, name):
-        """Est appelée quand on demande un attribut appelé "name" et qu'il n'existe pas."""
-
-        return None
-
-    def __delattr__(self, nom_attr):
-        """On ne peut supprimer d'attribut, on lève l'exception AttributeError.
-
-        Raises:
-            AttributeError: Erreurs d'attribut.
-        """
-
-        raise AttributeError(
-            "Vous ne pouvez supprimer aucun attribut de cette classe")
-
-
-class Battleship_IA(Battleship):
-    """Classe définissant une partie IA vs IA
-
-    Hérite des attributs de la classe Battleship.
-    """
-
-    def __init__(self):
-        """Constructeur de la classe.
-        """
-
-        self.conf = Configuration(IA = True)
-
-        # for loop many games
-        plateau_joueur1 = Plateau(self.conf.config)
-        plateau_joueur2 = Plateau(self.conf.config)
-
-        self.joueur1 = PlayerIA(self.conf, plateau_joueur1)
-        self.joueur2 = PlayerIA(self.conf, plateau_joueur2)
-
-        self.joueur1.start = True
-        self.play(self.conf.config, auto_IA = True)
-
 def main():
     """Routine globale.
     """
 
-    while True:
-        try:
-            test = int(input(
-                "Entrer 1 pour une partie nomale et 2 pour une partie entre deux IA. \n> "))
-            if not test in [1,2]:
-                raise ValueError("Entrer 1 ou 2.")
-            break
-        except ValueError as VE:
-            print(VE)
+    # Initialisation du parser
+    args, parser = get_parser()
+    # Lancement du programme
+    Battleship(args, parser)
 
-    if test == 1:
-        Battleship()
-    elif test == 2:
-        Battleship_IA()
+def get_parser():
+    """Création du parser et de tous ses arguments.
+    """
+
+    # Initialisation du parser
+    parser = argparse.ArgumentParser(prog='Battleship', description='Jeu de bataille navale')
+    parser.add_argument('--version', action='version', version='%(prog)s 1.2.2')
+    parser.add_argument('-cf', '--conf-file', help='Fichier contenant les configurations.',
+                            metavar='', default=None, dest='filename', type=str)
+    parser.add_argument('-m', '--mode', help='Mode de jeu. 1. PVP/ 2. PVE/ 3. IA vs IA.', type=int, choices=[1, 2, 3],
+                            metavar='', default=None, dest='mode')
+    # Sub-parser new_config
+    subparsers = parser.add_subparsers()
+    new_config = subparsers.add_parser('new-config', help='Création d\'une nouvelle configuration. Entrer le nombre de colonnes, suivi du nombre de ligne et de la liste des bateaux.')
+    new_config.add_argument('-c', '--columns', help='Nombre de colonnes.', type=int, metavar='', default=None, dest='columns', required=True)
+    new_config.add_argument('-l', '--lines', help='Nombre de lignes.', type=int, metavar='', default=None, dest='lines', required=True)
+    new_config.add_argument('-b', '--boats', help='Nombres de bateaux de tailles 2,3,4 et 5 séparés par une virgule.', type=str, metavar='',
+                            default=None, dest='boat', required=True)
+
+    parser.add_argument('-ec', '--exist-config', help='Choix d\'une configuration existante dans la liste des configurations. Entrer la ligne voulue.',
+                            default=None, metavar='', dest='exist_config')
+    # Appel de la fonction qui cré les commandes
+    args = parser.parse_args()
+    # Gestion des commandes exclusives
+    if hasattr(args, 'columns'): # Sans appel de new-config, args ne cré pas ses attributs
+        if args.exist_config is not None:
+            if not ((args.columns and args.lines and args.boat) is None):
+                parser.error('Les arguments exist_config et new_config ne sont pas compatibles.')
+
+    return args, parser
 
 if __name__ == '__main__':
     sys.exit(main())

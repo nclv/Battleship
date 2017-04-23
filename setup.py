@@ -15,7 +15,7 @@ setup(
     description='Jeu de société PVP / PVE',
     long_description=readme,
     license="GPLv3"
-    author='Vincent Nicolas',
+    author='Nicolas Vincent',
     author_email='nicolas.vincent100@gmail.com',
     url='https://github.com/NicovincX2/Battleship',
     packages=find_packages(exclude=('tests', 'docs'))
