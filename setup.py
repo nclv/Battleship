@@ -11,11 +11,11 @@ with open('LICENSE') as f:
 
 setup(
     name='Bataille navale',
-    version='1.2.1',
+    version='1.3.0',
     description='Jeu de société PVP / PVE',
     long_description=readme,
     license="GPLv3"
-    author='Nicolas Vincent',
+    author='Me',
     author_email='nicolas.vincent100@gmail.com',
     url='https://github.com/NicovincX2/Battleship',
     packages=find_packages(exclude=('tests', 'docs'))
