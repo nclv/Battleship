@@ -231,9 +231,9 @@ class Configuration(object):
         # Ajout de la configuration crée au fichier
         self.add_config()
     
-    @classmethod
+    @staticmethod
     @while_true
-    def columns_input(cls):
+    def columns_input():
         """Input du nombre de colonnes.
         
         Returns:
@@ -245,9 +245,9 @@ class Configuration(object):
             raise ValueError("Le nombre de colonnes doit être un entier compris entre 10 et 26.\n")
         return columns
     
-    @classmethod
+    @staticmethod
     @while_true
-    def lines_input(cls):
+    def lines_input():
         """Input du nombre de lignes.
         
         Returns:
@@ -316,9 +316,9 @@ class Configuration(object):
             self.conf_input()
             print("\nContenu du fichier de configuration choisi : \n",self.config, "\n")
     
-    @classmethod
+    @staticmethod
     @while_true
-    def conf_choose_input(cls):
+    def conf_choose_input():
         """Input du choix de la configuration.
         
         Returns:
@@ -863,9 +863,9 @@ class Plateau(object):
                 "Vous n'avez plus de bateau de taille {}.".format(taille))
         return taille
     
-    @classmethod
+    @staticmethod
     @while_true
-    def place_input(cls):
+    def place_input():
         """Input de la première case du bateau.
         
         Returns:
@@ -878,9 +878,9 @@ class Plateau(object):
                 "Entrer une case qui est présente sur le plateau.")
         return place
     
-    @classmethod
+    @staticmethod
     @while_true
-    def direction_input(self):  
+    def direction_input():  
         """Input de la direction vers laquelle se dirige le bateau.
         
         Returns:
@@ -892,8 +892,9 @@ class Plateau(object):
         if not direction in ['N', 'S', 'E', 'O']:
             raise ValueError("Entrer une direction valide.")
         return direction
-        
-    def alea_input_rules(self, configships, table, taille_list):
+    
+    @staticmethod
+    def alea_input_rules(configships, table, taille_list):
         """Choix aléatoire.
 
         Args:
@@ -910,7 +911,7 @@ class Plateau(object):
         .. seealso:: taille_alea_input().
         """
 
-        taille, taille_list = Plateau.taille_alea_input(taille_list, configships)        
+        taille, taille_list = Plateau.taille_alea_input(taille_list, configships)
         place = secrets.choice(table)
         direction = secrets.choice(['N', 'S', 'E', 'O'])
 
@@ -1068,9 +1069,9 @@ class PlayerHuman(Player):
             self.aleatoire = False
         plateau_joueur.affichage_our_ships(config)
     
-    @classmethod
+    @staticmethod
     @while_true
-    def generation_input(cls):
+    def generation_input():
         """Input du choix de la génération du plateau.
         
         Returns:
@@ -1083,9 +1084,9 @@ class PlayerHuman(Player):
             raise ValueError("Entrer 1 ou 2.")
         return gen_j1
     
-    @classmethod
+    @staticmethod
     @while_true
-    def near_input(cls):
+    def near_input():
         """Input du choix du placement proche des bateaux.
         
         Returns:
@@ -1528,9 +1529,9 @@ class Battleship(object):
             self.joueur2.start = True
             print("{joueur2} commence la partie.".format(joueur2=self.joueur2.name))
             
-    @classmethod
+    @staticmethod
     @while_true
-    def choose_starter_input(cls):
+    def choose_starter_input():
         """Input de qui commence.
         
         Returns:
@@ -1668,9 +1669,9 @@ class Battleship(object):
 
         return position
     
-    @classmethod
+    @staticmethod
     @while_true
-    def choose_number_plays(cls):
+    def choose_number_plays():
         """Input du nombre de parties (IA vs IA).
         
         Returns:
