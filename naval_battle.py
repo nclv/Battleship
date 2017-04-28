@@ -1,7 +1,14 @@
-#! python3.6
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """naval_battle.py: Jeu de bataille navale. """
+
+__version__='1.3.3'
+
+try:
+    import secrets # Nombres random py3.6
+except ImportError:
+    import random as secrets
 
 import sys
 import os
@@ -11,7 +18,6 @@ import ast # eval()
 import math
 import itertools
 import operator
-import secrets # Nombres random
 import string
 import functools
 import pandas # Affichage plateau
@@ -45,7 +51,8 @@ def while_true(func):
                 print(VE)
         return res
     return wrapper
-    
+
+
 class Configuration(object):
     """Classe de configuration du plateau.
 
@@ -118,7 +125,7 @@ class Configuration(object):
         for x, y in zip(boat_list, boat_list[1:]):
             if x < y:
                 raise func(
-                    "Vous avez plus de bateaux de taille {} que de bateaux de taille {}.\n> ".format(y, x))    
+                    "Vous avez plus de bateaux de taille {} que de bateaux de taille {}.\n> ".format(y, x))
         return boat_list
         
     def verif_config_input(self, func, num_conf, config_list):
@@ -273,7 +280,7 @@ class Configuration(object):
         self.ships_number_rule() # Nombre de bateaux autorisés
         ships_values = list(map(int, input(
             "\nEntrer à la suite les nombres de bateaux de tailles 2,3,4 et 5 séparés par une virgule. \n{} bateaux sont autorisés au maximum.\n> ".format(self.nb_ships_allowed)).split(',')))
-        ships_values = self.verif_boat_input(ValueError, ships_values, verif=True)   
+        ships_values = self.verif_boat_input(ValueError, ships_values, verif=True)
         
         return ships_values
 
@@ -880,7 +887,7 @@ class Plateau(object):
     
     @staticmethod
     @while_true
-    def direction_input():  
+    def direction_input():
         """Input de la direction vers laquelle se dirige le bateau.
         
         Returns:
@@ -974,7 +981,7 @@ class Player(object):
         self.ships_lose = 0  # 0 bateaux coulé
         self.ships_hit = 0  # 0 case bateau touché
         self.aleatoire = None
-        self.IA = None # IA du joueur s'il n'est pas humain    
+        self.IA = None # IA du joueur s'il n'est pas humain
     
     @while_true
     def joueur_name_input(self, j_type):
@@ -1500,7 +1507,7 @@ class Battleship(object):
                 plateau_joueur2 = Plateau(self.conf.config)
                 self.joueur1 = PlayerIA(self.conf, plateau_joueur1, init=joueur1_init)
                 self.joueur1.start = True
-                self.joueur2 = PlayerIA(self.conf, plateau_joueur2, init=joueur2_init)  
+                self.joueur2 = PlayerIA(self.conf, plateau_joueur2, init=joueur2_init)
                 self.play(self.conf.config, auto_IA=True)
 
     def choose_starter(self):
@@ -1719,7 +1726,7 @@ def get_parser():
 
     # Initialisation du parser
     parser = argparse.ArgumentParser(prog='Battleship', description='Jeu de bataille navale')
-    parser.add_argument('--version', action='version', version='%(prog)s 1.3.0')
+    parser.add_argument('--version', action='version', version='%(prog)s 1.3.3')
     
     # Sub-parser new_config
     subparsers = parser.add_subparsers()
