@@ -10,6 +10,9 @@ import naval_battle
 here = os.path.abspath(os.path.dirname(__file__))
 
 def read(*filenames, **kwargs):
+    """Lit plusieurs fichiers et les assemble.
+    """
+    
     encoding = kwargs.get('encoding', 'utf-8')
     sep = kwargs.get('sep', '\n')
     buf = []

@@ -3,12 +3,20 @@
 
 """naval_battle.py: Jeu de bataille navale. """
 
-__version__='1.3.3'
+__version__='1.3.4'
 
 try:
     import secrets # Nombres random py3.6
 except ImportError:
-    import random as secrets
+    from random import SystemRandom
+    secrets = SystemRandom()
+
+try:
+    import pandas # Affichage plateau
+    import numpy as np # Array
+except ImportError:
+    import subprocess
+    subprocess.run(["pip", "install", "-r", "requirements.txt"])
 
 import sys
 import os
@@ -20,8 +28,6 @@ import itertools
 import operator
 import string
 import functools
-import pandas # Affichage plateau
-import numpy as np # Array
 
 
 def timethis(func):
@@ -761,7 +767,7 @@ class Plateau(object):
         """
 
         print("Bateaux du joueur :")
-        j_ships = [self.list_cases[i].our_ship for i in range(0, config["lines"] * config["columns"])]
+        j_ships = [str(self.list_cases[i].our_ship)[0] for i in range(0, config["lines"] * config["columns"])]
         # Affichage d'une croix sur la case touchée
         for i, j in enumerate(j_ships):
             if j != 0 and int(self.list_cases[i].adv_tir) == 1:
@@ -1131,9 +1137,7 @@ class PlayerIA(Player):
             self.name = init[0]
             self.IA = StrategieIA(conf, human=True)
             self.IA.difficulte = init[1] # Attribution de la difficulté
-            # duplicates
-            if self.IA.difficulte == 2:
-                self.IA.quadrillage_list(conf.config) # Une case sur deux
+            self.IA.choose_plateau() # Attribution du plateau en fonction de la difficulté
         plateau_joueur.placement_boat(self, conf.nb_tot_ships, conf.config, Plateau.table)
         plateau_joueur.affichage_our_ships(conf.config)
 
@@ -1168,16 +1172,14 @@ class StrategieIA(object):
 
         self.table_allowed = np.array(Plateau.table.copy()) # Array numpy pour qu'une modification sur table_allowed modifie aussi table_allowed_cut
         self.table_allowed_cut = np.array([])
+        
+        self.choose_plateau()
 
         self.possibilites = []
         self.horizontal = False
         self.vertical = False
         self.direct = ['N', 'S', 'E', 'O']
         self.directions = self.direct.copy()
-        
-        # duplicates
-        if self.difficulte == 2:
-            self.quadrillage_list(conf.config) # Une case sur deux
     
     @while_true
     def choose_difficulte(self):
@@ -1208,6 +1210,13 @@ class StrategieIA(object):
         table_cut = [item[::2] if index % 2 == 0 else item[1::2] for index, item in enumerate(table_cut)]
         # On rattache les sous-listes
         self.table_allowed_cut = np.array([x for y in table_cut for x in y])
+        
+    def choose_plateau(self):
+        """Choix du plateau en fonction de la difficulté.
+        """
+        
+        if self.difficulte == 2:
+            self.quadrillage_list(conf.config) # Une case sur deux
 
     def exec_strategie(self, joueur1, joueur2, config):
         """Exécute la stratégie correspondant à la difficulté donnée à l'IA.
@@ -1485,12 +1494,12 @@ class Battleship(object):
             self.choose_starter()
             self.play(self.conf.config)
         elif self.conf.mode == 3:
-            # Initialisation du joueur1
+            # Initialisation d'un joueur1 d'initialisation
             self.joueur1 = PlayerIA(self.conf, plateau_joueur1)
             self.joueur1.start = True
             # Sauvegarde des paramètres qui se retrouve lors des parties suivantes
             joueur1_init = [self.joueur1.name, self.joueur1.IA.difficulte]
-            # Initialisation du joueur2
+            # Initialisation d'un joueur2 d'initialisation
             self.joueur2 = PlayerIA(self.conf, plateau_joueur2)
             # Sauvegarde des paramètres qui se retrouve lors des parties suivantes
             joueur2_init = [self.joueur2.name, self.joueur2.IA.difficulte]
@@ -1501,8 +1510,8 @@ class Battleship(object):
             if numb is None:
                 numb = Battleship.choose_number_plays()
             # Boucle définissant le nombre de parties à effectuer
-            for i in range(numb):
-                print(i)
+            for i in range(0, numb):
+                print("Partie numéro {}".format(i))
                 plateau_joueur1 = Plateau(self.conf.config)
                 plateau_joueur2 = Plateau(self.conf.config)
                 self.joueur1 = PlayerIA(self.conf, plateau_joueur1, init=joueur1_init)
@@ -1725,8 +1734,11 @@ def get_parser():
     """
 
     # Initialisation du parser
-    parser = argparse.ArgumentParser(prog='Battleship', description='Jeu de bataille navale')
+    parser = argparse.ArgumentParser(prog='naval_battle.py', description='Jeu de bataille navale')
     parser.add_argument('--version', action='version', version='%(prog)s 1.3.3')
+    
+    # Group configuration
+    config = parser.add_argument_group('Configuration')
     
     # Sub-parser new_config
     subparsers = parser.add_subparsers()
@@ -1736,13 +1748,13 @@ def get_parser():
     new_config.add_argument('-b', '--boats', help='Nombres de bateaux de tailles 2,3,4 et 5 séparés par une virgule.', type=str, metavar='N',
                             default=None, dest='boat', required=True)
 
-    parser.add_argument('-ec', '--exist-config', help='Choix d\'une configuration existante dans la liste des configurations. Entrer la ligne voulue.',
+    config.add_argument('-ec', '--exist-config', help='Choix d\'une configuration existante dans la liste des configurations. Entrer la ligne voulue.',
                             default=None, metavar='ligne', type=int, dest='exist_config')
-    parser.add_argument('-cf', '--conf-file', help='Fichier contenant les configurations.',
+    config.add_argument('-cf', '--conf-file', help='Fichier contenant les configurations.',
                             metavar='filename', default=None, dest='file_name', type=str)
-    parser.add_argument('-m', '--mode', help='Mode de jeu. 1. PVP/ 2. PVE/ 3. IA vs IA.', type=int, choices=[1, 2, 3],
+    config.add_argument('-m', '--mode', help='Mode de jeu. 1. PVP/ 2. PVE/ 3. IA vs IA.', type=int, choices=[1, 2, 3],
                             metavar='mode', default=None, dest='mode')
-    parser.add_argument('-n', '--number', help='Nombre de parties IA vs IA.', type=int, metavar='N', default=None, dest='play_number')
+    config.add_argument('-n', '--number', help='Nombre de parties IA vs IA.', type=int, metavar='N', default=None, dest='play_number')
     # Appel de la fonction qui cré les commandes
     args = parser.parse_args()
     # Gestion des commandes exclusives

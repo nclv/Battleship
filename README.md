@@ -13,6 +13,12 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/2cd632423fed43b3be7294659e4ab71e)](https://www.codacy.com/app/NicovincX2/Battleship?utm_source=github.com&utm_medium=referral&utm_content=NicovincX2/Battleship&utm_campaign=badger)
 [![Code Issues](https://www.quantifiedcode.com/api/v1/project/471352311f004f6cba93c5be69076df7/badge.svg)](https://www.quantifiedcode.com/app/project/471352311f004f6cba93c5be69076df7)
 
+## Installation
+Installer les modules utilisés dans le programme.
+```
+pip install -r requirements.txt
+```  
+
 ## Description
 Jeu de société dans lequel deux joueurs tentent de couler tous les navires adverses.
 Le gagnant est celui qui parvient à torpiller complètement les navires de l'adversaire avant que tous les siens ne le soient.
@@ -31,6 +37,42 @@ Un pion blanc signale l'emplacement de nos tir dans l'eau et un pion rouge l'emp
 
 ## Spécifications des interfaces.
 Fichier de configuration par défaut: ```configs.txt```
+
+### COMMAND LINE : inline
+```
+usage: naval_battle.py [-h] [--version] [-ec ligne] [-cf filename] [-m mode] [-n N]
+                  {new-config} ...
+
+Jeu de bataille navale
+
+positional arguments:
+  {new-config}
+    new-config          Création d'une nouvelle configuration. Entrer le
+                        nombre de colonnes, suivi du nombre de ligne et de la
+                        liste des bateaux.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+
+Configuration:
+  -ec ligne, --exist-config ligne
+                        Choix d'une configuration existante dans la liste des
+                        configurations. Entrer la ligne voulue.
+  -cf filename, --conf-file filename
+                        Fichier contenant les configurations.
+  -m mode, --mode mode  Mode de jeu. 1. PVP/ 2. PVE/ 3. IA vs IA.
+  -n N, --number N      Nombre de parties IA vs IA.
+```
+
+#### Exemple
+``` 
+naval_battle.py -cf configs -ec 6 -m 3 -n 2
+```
+ * Fichier de configuration: configs.txt, 
+ * Configuration N° 6, 
+ * Mode: IA vs IA,
+ * Nombre de parties: 2.
 
 ### COMMAND LINE : input
 Choix de la configuration :
