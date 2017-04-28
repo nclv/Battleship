@@ -9,7 +9,7 @@
 </p>
 
 ## Status
-[![Join the Battleship-python chat]https://young-island-83658.herokuapp.com/badge.svg)](https://young-island-83658.herokuapp.com/)
+[![Join the Battleship-python chat](https://young-island-83658.herokuapp.com/badge.svg)](https://young-island-83658.herokuapp.com/)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/2cd632423fed43b3be7294659e4ab71e)](https://www.codacy.com/app/NicovincX2/Battleship?utm_source=github.com&utm_medium=referral&utm_content=NicovincX2/Battleship&utm_campaign=badger)
 [![Code Issues](https://www.quantifiedcode.com/api/v1/project/471352311f004f6cba93c5be69076df7/badge.svg)](https://www.quantifiedcode.com/app/project/471352311f004f6cba93c5be69076df7)
 
