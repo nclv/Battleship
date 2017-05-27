@@ -3,8 +3,26 @@
 
 """naval_battle.py: Jeu de bataille navale. """
 
-__version__='1.3.4'
+__version__='1.3.5'
 
+import sys
+import platform
+import os
+import time
+import argparse # Add command-line arguments support
+import ast # eval()
+import math
+import itertools
+import operator
+import string
+import functools
+
+# Vérification de la version de l'installation
+try:
+    assert sys.version_info >= (3,0)
+except AssertionError:
+    raise SystemExit("Ce jeu ne supporte pas Python {}. Installer une version 3.x.x pour le faire tourner.".format(platform.python_version()))
+    
 try:
     import secrets # Nombres random py3.6
 except ImportError:
@@ -17,17 +35,7 @@ try:
 except ImportError:
     import subprocess
     subprocess.run(["pip", "install", "-r", "requirements.txt"])
-
-import sys
-import os
-import time
-import argparse # Add command-line arguments support
-import ast # eval()
-import math
-import itertools
-import operator
-import string
-import functools
+    raise SystemExit()
 
 
 def timethis(func):
@@ -76,7 +84,7 @@ class Configuration(object):
         Args:
             args (class instance): Argument entrés en ligne de commande.
             parser (class instance): Parser de la ligne de commande.
-        
+
         .. seealso:: verif_parser(), choose_gamemode(), choose_file(), choose_config()
         """
 
@@ -1137,7 +1145,7 @@ class PlayerIA(Player):
             self.name = init[0]
             self.IA = StrategieIA(conf, human=True)
             self.IA.difficulte = init[1] # Attribution de la difficulté
-            self.IA.choose_plateau() # Attribution du plateau en fonction de la difficulté
+            self.IA.choose_plateau(conf) # Attribution du plateau en fonction de la difficulté
         plateau_joueur.placement_boat(self, conf.nb_tot_ships, conf.config, Plateau.table)
         plateau_joueur.affichage_our_ships(conf.config)
 
@@ -1173,7 +1181,7 @@ class StrategieIA(object):
         self.table_allowed = np.array(Plateau.table.copy()) # Array numpy pour qu'une modification sur table_allowed modifie aussi table_allowed_cut
         self.table_allowed_cut = np.array([])
         
-        self.choose_plateau()
+        self.choose_plateau(conf)
 
         self.possibilites = []
         self.horizontal = False
@@ -1211,7 +1219,7 @@ class StrategieIA(object):
         # On rattache les sous-listes
         self.table_allowed_cut = np.array([x for y in table_cut for x in y])
         
-    def choose_plateau(self):
+    def choose_plateau(self, conf):
         """Choix du plateau en fonction de la difficulté.
         """
         
@@ -1511,7 +1519,7 @@ class Battleship(object):
                 numb = Battleship.choose_number_plays()
             # Boucle définissant le nombre de parties à effectuer
             for i in range(0, numb):
-                print("Partie numéro {}".format(i))
+                print("Partie numéro {}".format(i+1))
                 plateau_joueur1 = Plateau(self.conf.config)
                 plateau_joueur2 = Plateau(self.conf.config)
                 self.joueur1 = PlayerIA(self.conf, plateau_joueur1, init=joueur1_init)

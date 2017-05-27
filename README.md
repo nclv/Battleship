@@ -14,10 +14,13 @@
 [![Code Issues](https://www.quantifiedcode.com/api/v1/project/471352311f004f6cba93c5be69076df7/badge.svg)](https://www.quantifiedcode.com/app/project/471352311f004f6cba93c5be69076df7)
 
 ## Installation
-Installer les modules utilisés dans le programme.
+Pour installer les modules utilisés dans le programme. 
 ```
 pip install -r requirements.txt
 ```  
+Si les modules nécessaires ne sont pas installés, le lancement de ```naval_battle.py``` les installera auomatiquement via ```pip```.  
+Si ```pip``` n'est pas reconnu que l'erreur renvoyée est de type: ```'python pip' is not recognized as an internal or external command, operable program or batch file.```.  
+Voir [pip is not recognized](https://github.com/Langoor2/PokemonGo-Map-FAQ/wiki/%27python---pip%27-is-not-recognized-as-an-internal-or-external-command,-operable-program-or-batch-file) pour ajouter le répertoire ```Scripts``` de votre répertoire Python au ```path```.
 
 ## Description
 Jeu de société dans lequel deux joueurs tentent de couler tous les navires adverses.
