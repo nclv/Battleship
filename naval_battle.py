@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#! /usr/bin/ython
 # -*- coding: utf-8 -*-
 
 """naval_battle.py: Jeu de bataille navale. """
